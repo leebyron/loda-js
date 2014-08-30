@@ -2,14 +2,32 @@
   "name": "loda",
   "version": "0.0.0",
   "description": "Use JavaScript functionally, you shall!",
-  "main": "loda.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "homepage": "https://github.com/leebyron/loda-js",
+  "author": {
+    "name": "Lee Byron",
+    "url": "https://github.com/leebyron"
   },
   "repository": {
     "type": "git",
     "url": "git@github.com:leebyron/loda-js.git"
   },
+  "bugs": {
+    "url": "https://github.com/leebyron/loda-js/issues"
+  },
+  "main": "loda.js",
+  "scripts": {
+    "test": "jasmine-node --coffee --verbose spec/"
+  },
+  "devDependencies": {
+    "jasmine-node": "^1.14.5",
+    "jasmine-check": "^0.1.3",
+    "grunt": "^0.4.5",
+    "uglify-js": "^2.4.15"
+  },
+  "files": [
+    "loda.js",
+    "README.md"
+  ],
   "keywords": [
     "functional",
     "lamda",
@@ -17,10 +35,5 @@
     "iterator",
     "lazy"
   ],
-  "author": "Lee Byron <lee@leebyron.com> (http://leebyron.com/)",
-  "license": "BSD",
-  "bugs": {
-    "url": "https://github.com/leebyron/loda-js/issues"
-  },
-  "homepage": "https://github.com/leebyron/loda-js"
+  "license": "BSD"
 }

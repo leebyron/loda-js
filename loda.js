@@ -1,32 +1,33 @@
-/*
+/**
+ * Use JavaScript functionally, you must!
+ */
 
-Use JavaScript functionally, you must!
-
-*/
-
-
-
-function concat(indexed1, indexed2) {
-  var len1 = indexed1.length;
-  var result = new Array(len1 + indexed2.length);
-  for (var ii = 0; ii < len1; ii++) {
-    result[ii] = indexed1[ii];
+function install(global) {
+  for (var x in loda) {
+    if (loda[x] !== install) {
+      if (global[x]) throw new Error(x + ' already in scope');
+      global[x] = loda[x];
+    }
   }
-  for (; ii < result.length; ii++) {
-    result[ii] = indexed2[ii - len1];
-  }
-  return result;
 }
 
 
-function argStr(len) {
-  var arr = new Array(len), ii = 0;
-  while (ii < len) {
-    arr[ii] = '_' + ii++;
-  }
-  return arr.join(',');
+
+/**
+ * Function manipulation
+ * ---------------------
+ */
+
+
+/**
+ * Arity
+ */
+
+function arity(arity, fn) {
+  return getArityFn(arity)(fn);
 }
 
+// Internal
 
 var ARITY_CACHE = [];
 
@@ -37,16 +38,47 @@ function getArityFn(arity) {
 }
 
 function makeArityFn(arity) {
-  return 'return function('+argStr(arity)+'){\n  '+
+  var arr = new Array(arity), ii = 0;
+  while (ii < arity) {
+    arr[ii] = '_' + ii++;
+  }
+  return 'return function('+arr.join(',')+'){\n  '+
     'return fn.apply(this, arguments);\n}';
 }
 
-function arity(arity, fn) {
-  return getArityFn(arity)(fn);
+
+
+/**
+ * Call
+ */
+
+function call(fn, /* ... */ args) {
+  var calledArgs = selectArgs(arguments, 1);
+  var thisArg = calledArgs.pop();
+  return fn.apply(thisArg, calledArgs);
+}
+
+
+/**
+ * Apply
+ */
+
+function apply(fn, args/*, thisArg*/) {
+  return fn.apply(arguments[2], args);
 }
 
 
 
+/**
+ * Curry
+ */
+
+function curry(fn, arity) {
+  arity = arity || fn.length;
+  return arity > 1 ? getCurryFn(arity)(getCurryFn, fn) : fn;
+}
+
+// Internal
 
 var CURRY_CACHE = [];
 
@@ -68,223 +100,23 @@ function makeCurryFn(arity) {
       '      });\n';
     args.push('_' + ii);
   }
-  return '  function curried('+args.join(',')+') {\n'+
+  return (
+    '  function curried('+args.join(',')+') {\n'+
     '    switch (arguments.length) {\n'+
     '      case 0: return curried;\n'+
     cases +
     '    }\n'+
     '    return fn.apply(this, arguments);\n'+
     '  }\n'+
-    '  return curried;';
-}
-
-function curry(fn, arity) {
-  arity = arity || fn.length;
-  return arity > 1 ? getCurryFn(arity || fn.length)(getCurryFn, fn) : fn;
+    '  return curried;'
+  );
 }
 
 
-function partial(fn) {
-  var partialArgs = args(arguments, 1);
-  var remainingArity = fn.length - args.length;
-  function partialFn() {
-    return fn.apply(this, concat(partialArgs, arguments));
-  }
-  return remainingArity > 0 ? arity(remainingArity, partialFn) : partialFn;
-}
-
-function partialLeft(fn) {
-  var partialArgs = args(arguments, 1);
-  var remainingArity = fn.length - args.length;
-  function partialFn() {
-    return fn.apply(this, concat(arguments, partialArgs));
-  }
-  return remainingArity > 0 ? arity(remainingArity, partialFn) : partialFn;
-}
-
-
-
-
-
-var ITERATOR_SYMBOL = typeof Symbol === 'function' ? Symbol.iterator : '@@iterator';
-
-// TODO add support for mori-ish things.
-function iterable(maybeIterable) {
-  if (!maybeIterable || maybeIterable.length === 0) {
-    return EMPTY_ITERABLE;
-  }
-  if (maybeIterable[ITERATOR_SYMBOL]) {
-    return maybeIterable;
-  }
-  if (typeof maybeIterable.next === 'function') {
-    return new Iterable(function() { return maybeIterable });
-  }
-  if (maybeIterable.length > 0) {
-    return indexedIterable(maybeIterable);
-  }
-  return keyedIterable(maybeIterable);
-}
-
-function iterator(maybeIterable) {
-  return iterable(maybeIterable)[ITERATOR_SYMBOL]();
-}
-
-function indexedIterable(indexed) {
-  return new Iterable(function() {
-    var ii = 0;
-    return function () {
-      if (ii === indexed.length) {
-        return iteratorDone();
-      }
-      return iteratorValue(indexed[ii++]);
-    };
-  });
-}
-
-function keyedIterable(keyed) {
-  return new Iterable(function() {
-    var ii = 0;
-    var keys = Object.keys(keyed);
-    return function () {
-      if (ii === keys.length) {
-        return iteratorDone();
-      }
-      return iteratorValue([keys[ii], keyed[keys[ii++]]]);
-    };
-  });
-}
-
-function Iterable(iteratorFactory) {
-  this.iteratorFactory = iteratorFactory;
-}
-Iterable.prototype[ITERATOR_SYMBOL] = function() {
-  return new Iterator(this.iteratorFactory());
-}
-Iterable.prototype.toString =
-Iterable.prototype.toSource =
-Iterable.prototype.inspect = function() {
-  return '[Iterable]';
-}
-
-function Iterator(next) {
-  this.next = next;
-}
-Iterator.prototype[ITERATOR_SYMBOL] = function() {
-  return this
-}
-
-var EMPTY_ITERABLE = new Iterable(function() {
-  return iteratorDone
-});
-
-
-var ITERATOR_RETURN = { done: true, value: undefined };
-
-function iteratorDone() {
-  ITERATOR_RETURN.done = true;
-  ITERATOR_RETURN.value = undefined;
-  return ITERATOR_RETURN;
-}
-
-function iteratorValue(value) {
-  ITERATOR_RETURN.done = false;
-  ITERATOR_RETURN.value = value;
-  return ITERATOR_RETURN;
-}
-
-
-function args(args, skip, mapper) {
-  skip = skip || 0;
-  var mapped = new Array(Math.max(0, args.length - skip));
-  for (var ii = skip; ii < args.length; ii++) {
-    mapped[ii - skip] = mapper ? mapper(args[ii]) : args[ii];
-  }
-  return mapped;
-}
-
-function filter(fn, iterable) {
-  return new Iterable(function () {
-    var iter = iterator(iterable);
-    return function () {
-      while (true) {
-        var step = iter.next();
-        if (step.done || fn(step.value)) return step;
-      }
-    }
-  })
-}
 
 /**
- * Usage: (reduce f coll)
-       (reduce f val coll)
-f should be a function of 2 arguments. If val is not supplied,
-returns the result of applying f to the first 2 items in coll, then
-applying f to that result and the 3rd item, etc. If coll contains no
-items, f must accept no arguments as well, and reduce returns the
-result of calling f with no arguments.  If coll has only 1 item, it
-is returned and f is not called.  If val is supplied, returns the
-result of applying f to val and the first item in coll, then
-applying f to that result and the 2nd item, etc. If coll contains no
-items, returns val and f is not called.
+ * Composition
  */
-function reduce(fn, iterable) {
-  var reduced = arguments[2];
-  var iter, step;
-  if (reduced) {
-    iter = iterator(reduced);
-    reduced = iterable;
-  } else {
-    iter = iterator(iterable);
-    step = iter.next();
-    if (step.done) return reduced;
-    reduced = step.value;
-  }
-  while (true) {
-    step = iter.next();
-    if (step.done) return reduced;
-    reduced = fn(reduced, step.value);
-    if (reduced === REDUCED) return REDUCED.value;
-  }
-}
-
-var REDUCED = { value : undefined };
-
-function reduced(value) {
-  REDUCED.value = value;
-  return REDUCED;
-}
-
-
-function map(fn) {
-  var iterables = arguments;
-  return new Iterable(function () {
-    var iterators = args(iterables, 1, iterator);
-    var arity = iterators.length;
-    return function () {
-      var args = new Array(arity);
-      for (var ii = 0; ii < arity; ii++) {
-        var step = iterators[ii].next();
-        if (step.done) return step;
-        args[ii] = step.value;
-      }
-      return iteratorValue(fn.apply(null, args));
-    }
-  });
-}
-
-
-
-
-function varargs() {
-  return args(arguments);
-}
-
-var zip = partial(map, varargs);
-
-
-
-function identity(x) { return x }
-
 
 function compose() {
   var fns = arguments;
@@ -310,26 +142,36 @@ function composeLeft() {
 }
 
 
-function argCache(arg, cache) {
-  return cache[arg] || (cache[arg] = {})
-}
 
-var CACHE_SYMBOL = typeof Symbol === 'function' ? Symbol() : '@__memocache__@';
+/**
+ * Partial
+ */
 
-function memo(fn) {
-  function memoized() {
-    var arg = reduce(argCache, memoized[CACHE_SYMBOL], arguments);
-    return arg[CACHE_SYMBOL] || (arg[CACHE_SYMBOL] = fn.apply(this, arguments));
+function partial(fn) {
+  if (arguments.length === 1) return fn;
+  var partialArgs = selectArgs(arguments, 1);
+  var remainingArity = fn.length - partialArgs.length;
+  function partialFn() {
+    return fn.apply(this, concat(partialArgs, arguments));
   }
-  fn.length && (memoized = arity(fn.length, memoized));
-  memoized[CACHE_SYMBOL] = {};
-  return memoized;
+  return remainingArity > 0 ? arity(remainingArity, partialFn) : partialFn;
 }
 
-function clear(memoized) {
-  memoized && memoized[CACHE_SYMBOL] && (memoized[CACHE_SYMBOL] = {})
-  return memoized;
+function partialLeft(fn) {
+  if (arguments.length === 1) return fn;
+  var partialArgs = selectArgs(arguments, 1);
+  var remainingArity = fn.length - partialArgs.length;
+  function partialFn() {
+    return fn.apply(this, concat(arguments, partialArgs));
+  }
+  return remainingArity > 0 ? arity(remainingArity, partialFn) : partialFn;
 }
+
+
+
+/**
+ * Bound
+ */
 
 function bound(fn) {
   return arity(fn.length + 1, function () {
@@ -346,16 +188,10 @@ function boundLeft(fn) {
   });
 }
 
-function call(fn, /* ... */ args) {
-  var calledArgs = args(arguments, 1);
-  var thisArg = calledArgs.pop();
-  return fn.apply(thisArg, calledArgs);
-}
 
-function apply(fn, args/*, thisArg*/) {
-  return fn.apply(arguments[2], args);
-}
-
+/**
+ * Complement
+ */
 
 function complement(fn) {
   function complementFn() {
@@ -365,10 +201,219 @@ function complement(fn) {
 }
 
 
+
+
+/**
+ * Memoization
+ * -----------
+ */
+
+
+/**
+ * Memo
+ */
+function memo(fn) {
+  function memoized() {
+    var arg = reduce(argCache, memoized[CACHE_SYMBOL], arguments);
+    return arg[CACHE_SYMBOL] || (arg[CACHE_SYMBOL] = fn.apply(this, arguments));
+  }
+  fn.length && (memoized = arity(fn.length, memoized));
+  memoized[CACHE_SYMBOL] = {};
+  return memoized;
+}
+
+var CACHE_SYMBOL = typeof Symbol === 'function' ? Symbol() : '@__memocache__@';
+
+function argCache(arg, cache) {
+  return cache[arg] || (cache[arg] = {})
+}
+
+/**
+ * Clear memoized function's cache
+ */
+function clear(memoized) {
+  memoized && memoized[CACHE_SYMBOL] && (memoized[CACHE_SYMBOL] = {})
+  return memoized;
+}
+
+
+
+
+/**
+ * Iterators
+ * ---------
+ */
+
+
+// TODO add support for mori-ish things.
+function iterable(maybeIterable) {
+  if (!maybeIterable) {
+    return EMPTY_ITERABLE;
+  }
+  if (maybeIterable[ITERATOR_SYMBOL]) {
+    return maybeIterable;
+  }
+  if (typeof maybeIterable.next === 'function') {
+    return new Iterable(function() { return maybeIterable });
+  }
+  if (typeof maybeIterable === 'function') {
+    return new Iterable(maybeIterable);
+  }
+  if (maybeIterable.length === 0) {
+    return EMPTY_ITERABLE;
+  }
+  if (maybeIterable.length > 0) {
+    return indexedIterable(maybeIterable);
+  }
+  return keyedIterable(maybeIterable);
+}
+
+function iterator(maybeIterable) {
+  return typeof maybeIterable.next === 'function' ?
+    maybeIterable :
+    iterable(maybeIterable)[ITERATOR_SYMBOL]();
+}
+
+// Internal iterator helpers
+
+var ITERATOR_SYMBOL = typeof Symbol === 'function' ?
+  Symbol.iterator :
+  '@@iterator';
+var ITERATOR_DONE = { done: true, value: undefined };
+var ITERATOR_VALUE = { done: false, value: undefined };
+
+function Iterable(iteratorFactory) {
+  this.iteratorFactory = iteratorFactory;
+}
+Iterable.prototype[ITERATOR_SYMBOL] = function() {
+  var iterator = this.iteratorFactory();
+  return typeof iterator.next === 'function' ? iterator : new Iterator(iterator);
+}
+Iterable.prototype.toString =
+Iterable.prototype.toSource =
+Iterable.prototype.inspect = function() {
+  return '[Iterable]';
+}
+
+function Iterator(next) {
+  this.next = next;
+}
+Iterator.prototype[ITERATOR_SYMBOL] = function() {
+  return this
+}
+
+function indexedIterable(indexed) {
+  return new Iterable(function() {
+    var ii = 0;
+    return function () {
+      if (ii === indexed.length) {
+        return ITERATOR_DONE;
+      }
+      return iteratorValue(indexed[ii++]);
+    };
+  });
+}
+
+function keyedIterable(keyed) {
+  return new Iterable(function() {
+    var ii = 0;
+    var keys = Object.keys(keyed);
+    return function () {
+      if (ii === keys.length) {
+        return ITERATOR_DONE;
+      }
+      return iteratorValue([keys[ii], keyed[keys[ii++]]]);
+    };
+  });
+}
+
+var EMPTY_ITERABLE = new Iterable();
+EMPTY_ITERABLE[ITERATOR_SYMBOL] = new Iterator();
+EMPTY_ITERABLE[ITERATOR_SYMBOL].next = function () {
+  return ITERATOR_DONE;
+}
+
+function iteratorValue(value) {
+  ITERATOR_VALUE.value = value;
+  return ITERATOR_VALUE;
+}
+
+
+
+
+/**
+ * Reify Iterables
+ * ---------------
+ */
+
+function array(iterable) {
+  return reduce(append, [], iterable);
+}
+
+function object(iterable) {
+  return reduce(set, {}, iterable);
+}
+
+var string = partial(reduce, add2, '');
+
+
+
+
+/**
+ * Iterable computations
+ * ---------------------
+ */
+
+/**
+ * isEmpty
+ */
 function isEmpty(iterable) {
   return !iterable || iterable.length === 0 || iterator(iterable).next().done;
 }
 
+/**
+ * Filter
+ */
+function filter(fn, iterable) {
+  return new Iterable(function () {
+    var iter = iterator(iterable);
+    return function () {
+      while (true) {
+        var step = iter.next();
+        if (step.done || fn(step.value)) return step;
+      }
+    }
+  })
+}
+
+/**
+ * Map
+ */
+function map(fn) {
+  var iterables = arguments;
+  return new Iterable(function () {
+    var iterators = selectArgs(iterables, 1, iterator);
+    var arity = iterators.length;
+    return function () {
+      var args = new Array(arity);
+      for (var ii = 0; ii < arity; ii++) {
+        var step = iterators[ii].next();
+        if (step.done) return step;
+        args[ii] = step.value;
+      }
+      return iteratorValue(fn.apply(null, args));
+    }
+  });
+}
+
+/**
+ * Zip
+ */
+var zip = partial(map, tuple);
+
+/**
+ * Count
+ */
 function count(iterable) {
   return iterable ? iterable.length ? iterable.length : reduce(counter, 0, iterable) : 0;
 }
@@ -378,25 +423,83 @@ function counter(_, x) {
 }
 
 
-function get(key, indexed) {
-  return indexed[key];
+/**
+ * Reduce
+ *
+ * Usage: (reduce f coll)
+ *        (reduce f val coll)
+ * f should be a function of 2 arguments. If val is not supplied,
+ * returns the result of applying f to the first 2 items in coll, then
+ * applying f to that result and the 3rd item, etc. If coll contains no
+ * items, f must accept no arguments as well, and reduce returns the
+ * result of calling f with no arguments.  If coll has only 1 item, it
+ * is returned and f is not called.  If val is supplied, returns the
+ * result of applying f to val and the first item in coll, then
+ * applying f to that result and the 2nd item, etc. If coll contains no
+ * items, returns val and f is not called.
+ */
+function reduce(fn, iterable) {
+  var reduced = arguments[2];
+  var iter, step;
+  if (reduced) {
+    iter = iterator(reduced);
+    reduced = iterable;
+  } else {
+    iter = iterator(iterable);
+    step = iter.next();
+    if (step.done) return reduced;
+    reduced = step.value;
+  }
+  while (true) {
+    step = iter.next();
+    if (step.done) return reduced;
+    reduced = fn(reduced, step.value);
+    if (reduced === REDUCED) return REDUCED.value;
+  }
 }
 
-function set(indexed, tuple) {
-  return (indexed[tuple[0]] = tuple[1]), indexed;
+/**
+ * Reduced
+ */
+function reduced(value) {
+  REDUCED.value = value;
+  return REDUCED;
 }
 
-function append(array, val) {
-  return array.push(val), array;
+var REDUCED = { value : undefined };
+
+
+
+
+
+/**
+ * Argument computations
+ * ---------------------
+ */
+
+function tuple(/* ... */) {
+  return selectArgs(arguments);
 }
 
+/**
+ * Juxtaposition
+ */
+function juxt(/* ... */) {
+  var fns = arguments;
+  var juxtaposedArity = fns.length;
+  return arity(juxtaposedArity, function() {
+    var result = new Array(arity);
+    for (var ii = 0; ii < arity; ii++) {
+      result[ii] = fns[ii](arguments[ii]);
+    }
+    return result;
+  });
+}
 
-
-// TODO: these should all take var-args and become reductions.
-// curry(compose(partial(reduce, add), varargs), 2);
-
-
-function reduceArgs(fn) {
+/**
+ * Reduce Args
+ */
+function reduceArgs(fn /* ... */) {
   var reduced = arguments[1];
   var numArgs = arguments.length;
   var ii = 1;
@@ -407,9 +510,49 @@ function reduceArgs(fn) {
   return reduced;
 }
 
-function add2(x, y) {
-  return x + y;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Array Helpers
+ * -------------
+ */
+
+function get(key, indexed) {
+  return indexed[key];
 }
+
+function set(indexed, kvTuple) {
+  return (indexed[kvTuple[0]] = kvTuple[1]), indexed;
+}
+
+function append(array, val) {
+  return array.push(val), array;
+}
+
+
+
+
+/**
+ * Maths
+ * -----
+ */
+
+// TODO: these should all take var-args and become reductions.
+// curry(compose(partial(reduce, add), tuple), 2);
+
 
 var add = partial(reduceArgs, add2);
 
@@ -443,83 +586,112 @@ var min = curry(function (y, x) {
   return Math.min.apply(null, arguments)
 });
 
+
+/**
+ * Comparison
+ * ----------
+ */
+
 // TODO
-// is, lt, lteq, gt, gteq
+// lt, lteq, gt, gteq
 
 function is(x, y) {
   return x && x.equals ? x.equals(y) : Object.is ? Object.is(x, y) : x === y;
 }
 
-
-var string = partial(reduce, add2, '');
-
-function array(iterable) {
-  return reduce(append, [], iterable);
-}
-
-function object(iterable) {
-  return reduce(set, {}, iterable);
+function eq(x, y) {
+  return x === y;
 }
 
 
-function install(global) {
-  for (var x in loda) {
-    if (loda[x] !== install) {
-      if (global[x]) throw new Error(x + ' already in scope');
-      global[x] = loda[x];
-    }
+
+
+/**
+ * Internal helper methods
+ */
+
+function identity(x) {
+  return x
+}
+
+function add2(x, y) {
+  return x + y;
+}
+
+function concat(indexed1, indexed2) {
+  var len1 = indexed1.length;
+  var result = new Array(len1 + indexed2.length);
+  for (var ii = 0; ii < len1; ii++) {
+    result[ii] = indexed1[ii];
   }
+  for (; ii < result.length; ii++) {
+    result[ii] = indexed2[ii - len1];
+  }
+  return result;
+}
+
+function selectArgs(args, skip, mapper) {
+  skip = skip || 0;
+  var mapped = new Array(Math.max(0, args.length - skip));
+  for (var ii = skip; ii < args.length; ii++) {
+    mapped[ii - skip] = mapper ? mapper(args[ii]) : args[ii];
+  }
+  return mapped;
 }
 
 
+
+/**
+ * Here you go!
+ */
 var loda = {
-  install: install,
+  'install': install,
 
-  iterator: iterator,
-  array: array,
-  object: object,
-  string: string,
+  'arity': arity,
+  'call': call,
+  'apply': apply,
+  'curry': curry,
+  'compose': compose,
+  'composeLeft': composeLeft,
+  'partial': partial,
+  'partialLeft': partialLeft,
+  'bound': bound,
+  'boundLeft': boundLeft,
+  'complement': complement,
 
-  arity: arity,
-  bound: bound,
-  boundLeft: boundLeft,
-  call: call,
-  apply: apply,
-  curry: curry,
-  partial: partial,
-  partialLeft: partialLeft,
-  compose: compose,
-  composeLeft: composeLeft,
+  'memo': memo,
+  'clear': clear,
 
-  complement: complement,
+  'iterable': iterable,
+  'iterator': iterator,
 
-  memo: memo,
-  clear: clear,
+  'array': array,
+  'object': object,
+  'string': string,
 
-  varargs: varargs,
+  'isEmpty': isEmpty,
+  'filter': curry(filter, 2),
+  'map': curry(map, 2),
+  'zip': curry(zip, 2),
+  'count': count,
+  'reduce': curry(reduce, 2),
+  'reduced': reduced,
 
-  map: curry(map, 2),
-  zip: curry(zip, 2),
-  filter: curry(filter, 2),
-  count: count,
-  reduce: curry(reduce, 2),
-  reduced: reduced,
+  'tuple': tuple,
+  'juxt': juxt,
+  'reduceArgs': curry(reduceArgs, 2),
 
+  'add': curry(add, 2),
+  'sub': sub,
+  'mul': mul,
+  'div': div,
+  'mod': mod,
+  'pow': pow,
+  'max': max,
+  'min': min,
 
-  identity: identity,
-  isEmpty: isEmpty,
-
-  add: curry(add, 2),
-  sub: sub,
-  mul: mul,
-  div: div,
-  mod: mod,
-  pow: pow,
-  max: max,
-  min: min,
-
-  is: curry(is)
-};
+  'is': curry(is, 2),
+  'eq': curry(eq, 2)
+}
 
 module.exports = loda;
-
