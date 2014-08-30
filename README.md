@@ -18,3 +18,11 @@ Core concepts:
   * Sequence comprehensions return unfulfilled Iterables. This makes them lazy,
     allowing for performant chained operations and allows them to reify to any
     Array, Object or any kind of data structure.
+
+
+Contribution
+------------
+
+Use [Github issues](https://github.com/leebyron/loda/issues) for requests.
+
+Pull requests actively welcomed.
