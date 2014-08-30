@@ -1,3 +1,5 @@
+/* global Symbol */
+
 /**
  * Use JavaScript functionally, you must!
  */
@@ -23,23 +25,23 @@ function install(global) {
  * Arity
  */
 
-function arity(arity, fn) {
-  return getArityFn(arity)(fn);
+function arity(length, fn) {
+  return getArityFn(length)(fn);
 }
 
 // Internal
 
 var ARITY_CACHE = [];
 
-function getArityFn(arity) {
-  return ARITY_CACHE[arity] || (ARITY_CACHE[arity] =
-    new Function('fn', makeArityFn(arity))
+function getArityFn(length) {
+  return ARITY_CACHE[length] || (ARITY_CACHE[length] =
+    new Function('fn', makeArityFn(length)) /* jshint ignore: line */
   );
 }
 
-function makeArityFn(arity) {
-  var arr = new Array(arity), ii = 0;
-  while (ii < arity) {
+function makeArityFn(length) {
+  var arr = new Array(length), ii = 0;
+  while (ii < length) {
     arr[ii] = '_' + ii++;
   }
   return 'return function('+arr.join(',')+'){\n  '+
@@ -84,7 +86,7 @@ var CURRY_CACHE = [];
 
 function getCurryFn(arity) {
   return CURRY_CACHE[arity] || (CURRY_CACHE[arity] =
-    new Function('getCurryFn', 'fn', makeCurryFn(arity))
+    new Function('getCurryFn', 'fn', makeCurryFn(arity)) /* jshint ignore: line */
   );
 }
 
@@ -213,7 +215,7 @@ function complement(fn) {
  * Memo
  */
 function memo(fn) {
-  function memoized() {
+  var memoized = function () {
     var arg = reduce(argCache, memoized[CACHE_SYMBOL], arguments);
     return arg[CACHE_SYMBOL] || (arg[CACHE_SYMBOL] = fn.apply(this, arguments));
   }
@@ -254,10 +256,10 @@ function iterable(maybeIterable) {
     return maybeIterable;
   }
   if (typeof maybeIterable.next === 'function') {
-    return new Iterable(function() { return maybeIterable });
+    return new LodaIterable(function() { return maybeIterable });
   }
   if (typeof maybeIterable === 'function') {
-    return new Iterable(maybeIterable);
+    return new LodaIterable(maybeIterable);
   }
   if (maybeIterable.length === 0) {
     return EMPTY_ITERABLE;
@@ -282,28 +284,28 @@ var ITERATOR_SYMBOL = typeof Symbol === 'function' ?
 var ITERATOR_DONE = { done: true, value: undefined };
 var ITERATOR_VALUE = { done: false, value: undefined };
 
-function Iterable(iteratorFactory) {
+function LodaIterable(iteratorFactory) {
   this.iteratorFactory = iteratorFactory;
 }
-Iterable.prototype[ITERATOR_SYMBOL] = function() {
+LodaIterable.prototype[ITERATOR_SYMBOL] = function() {
   var iterator = this.iteratorFactory();
-  return typeof iterator.next === 'function' ? iterator : new Iterator(iterator);
+  return typeof iterator.next === 'function' ? iterator : new LodaIterator(iterator);
 }
-Iterable.prototype.toString =
-Iterable.prototype.toSource =
-Iterable.prototype.inspect = function() {
+LodaIterable.prototype.toString =
+LodaIterable.prototype.toSource =
+LodaIterable.prototype.inspect = function() {
   return '[Iterable]';
 }
 
-function Iterator(next) {
+function LodaIterator(next) {
   this.next = next;
 }
-Iterator.prototype[ITERATOR_SYMBOL] = function() {
+LodaIterator.prototype[ITERATOR_SYMBOL] = function() {
   return this
 }
 
 function indexedIterable(indexed) {
-  return new Iterable(function() {
+  return new LodaIterable(function() {
     var ii = 0;
     return function () {
       if (ii === indexed.length) {
@@ -315,7 +317,7 @@ function indexedIterable(indexed) {
 }
 
 function keyedIterable(keyed) {
-  return new Iterable(function() {
+  return new LodaIterable(function() {
     var ii = 0;
     var keys = Object.keys(keyed); // TODO: replace this with for hasOwn
     return function () {
@@ -327,8 +329,8 @@ function keyedIterable(keyed) {
   });
 }
 
-var EMPTY_ITERABLE = new Iterable();
-EMPTY_ITERABLE[ITERATOR_SYMBOL] = new Iterator();
+var EMPTY_ITERABLE = new LodaIterable();
+EMPTY_ITERABLE[ITERATOR_SYMBOL] = new LodaIterator();
 EMPTY_ITERABLE[ITERATOR_SYMBOL].next = function () {
   return ITERATOR_DONE;
 }
@@ -360,7 +362,7 @@ var string = partial(reduce, add2, '');
 
 
 /**
- * Iterable computations
+ * LodaIterable computations
  * ---------------------
  */
 
@@ -375,7 +377,7 @@ function isEmpty(iterable) {
  * Filter
  */
 function filter(fn, iterable) {
-  return new Iterable(function () {
+  return new LodaIterable(function () {
     var iter = iterator(iterable);
     return function () {
       while (true) {
@@ -391,7 +393,7 @@ function filter(fn, iterable) {
  */
 function map(fn) {
   var iterables = arguments;
-  return new Iterable(function () {
+  return new LodaIterable(function () {
     var iterators = selectArgs(iterables, 1, iterator);
     var arity = iterators.length;
     return function () {

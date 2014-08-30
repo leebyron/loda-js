@@ -1,12 +1,3 @@
-/**
- *
- *   grunt lint      Lint all source javascript
- *   grunt clean     Clean dist folder
- *   grunt build     Build dist javascript
- *   grunt test      Test dist javascript
- *   grunt default   Lint, Build then Test
- *
- */
 module.exports = function(grunt) {
   grunt.initConfig({
     jshint: {
@@ -15,7 +6,7 @@ module.exports = function(grunt) {
         curly: false,
         eqeqeq: true,
         eqnull: true,
-        esnext: true,
+        //esnext: true,
         expr: true,
         forin: true,
         freeze: true,
@@ -30,7 +21,7 @@ module.exports = function(grunt) {
         undef: true,
         unused: 'vars',
       },
-      all: ['**/*.js']
+      all: ['loda.js', 'resources/*.js']
     },
     build: {
       build: {
@@ -45,56 +36,29 @@ module.exports = function(grunt) {
     }
   });
 
-
-  // var fs = require('fs');
-  // var smash = require('smash');
-  // var traceur = require('traceur');
   var uglify = require('uglify-js');
 
   grunt.registerMultiTask('build', function () {
-    var done = this.async();
     this.files.map(function (file) {
-
       var data = grunt.file.read(file.src);
-
-      // var unTransformed = '';
-      // smash(file.src).on('data', function (data) {
-      //   unTransformed += data;
-      // }).on('end', function () {
-        // var transformed = traceur.compile(unTransformed, {
-        //   filename: file.src[0]
-        // });
-        // if (transformed.error) {
-        //   throw transformed.error;
-        // }
-        // var transformed = fs.readFileSync('resources/traceur-runtime.js', {encoding: 'utf8'}) + transformed.js;
-        // var wrapped = fs.readFileSync('resources/universal-module.js', {encoding: 'utf8'})
-        //   .replace('%MODULE%', transformed);
-
-        // var copyright = fs.readFileSync('resources/COPYRIGHT');
-
-        // fs.writeFileSync(file.dest + '.js', copyright + wrapped);
-
-        var result = uglify.minify(data, {
-          fromString: true,
-          mangle: {
-            toplevel: true
-          },
-          compress: {
-            comparisons: true,
-            pure_getters: true,
-            unsafe: true
-          },
-          output: {
-            max_line_len: 2048,
-          },
-          reserved: ['module', 'define', 'loda']
-        });
-
-        grunt.file.write(file.dest, result.code)
-        // fs.writeFileSync(file.dest, result.code);
-        done();
-      // });
+      var wrapper = grunt.file.read('./resources/universal-module.js');
+      var wrapped = wrapper.replace('"%MODULE%"', data);
+      var result = uglify.minify(wrapped, {
+        fromString: true,
+        mangle: {
+          toplevel: true
+        },
+        compress: {
+          comparisons: true,
+          pure_getters: true,
+          unsafe: true
+        },
+        output: {
+          max_line_len: 2048,
+        },
+        reserved: ['module', 'define', 'loda']
+      });
+      grunt.file.write(file.dest, result.code)
     });
   });
 
@@ -137,7 +101,7 @@ module.exports = function(grunt) {
   });
 
 
-  // grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-contrib-jshint');
   // grunt.loadNpmTasks('grunt-contrib-copy');
   // grunt.loadNpmTasks('grunt-contrib-clean');
   // grunt.loadNpmTasks('grunt-jest');
@@ -146,5 +110,5 @@ module.exports = function(grunt) {
   // grunt.registerTask('lint', 'Lint all source javascript', ['jshint']);
   // grunt.registerTask('build', 'Build distributed javascript', ['clean', 'smash', 'copy']);
   // grunt.registerTask('test', 'Test built javascript', ['jest']);
-  // grunt.registerTask('default', 'Lint, build and test.', ['lint', 'build', 'stats', 'test']);
+  grunt.registerTask('default', 'Lint, build and test.', ['jshint', 'build', 'stats']);
 }

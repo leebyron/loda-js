@@ -1,5 +1,7 @@
+/* global exports, module, define, loda */
+
 function defineModule(module) {
-  '%MODULE%';
+  "%MODULE%";
 }
 
 function getModule() {
@@ -12,4 +14,4 @@ function getModule() {
   defineModule(module) :
   'function' === typeof define && define.amd ?
     define(getModule) :
-    loda = getModule();
+    loda = getModule(); /* jshint ignore: line */
