@@ -45,6 +45,7 @@ describe 'loda', ->
 
     it 'has curried methods', ->
       expect(add(2)(3)).toEqual 5
+      expect(sub(2)(3)).toEqual -1
       expect(mul(2)(3)).toEqual 6
       expect(div(2)(3)).toEqual 2/3
       expect(mod(2)(3)).toEqual 2
@@ -57,3 +58,9 @@ describe 'loda', ->
       expect(add(1,2,3)).toEqual 6
       expect(add(1,2,3,4)).toEqual 10
       expect(add(1,2,3,4,5)).toEqual 15
+
+    it 'subtracts numbers', ->
+      expect(sub(1,2)).toEqual -1
+      expect(sub(1,2,3)).toEqual -4
+      expect(sub(1,2,3,4)).toEqual -8
+      expect(sub(1,2,3,4,5)).toEqual -13
