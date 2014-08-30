@@ -52,7 +52,7 @@ function makeArityFn(arity) {
  * Call
  */
 
-function call(fn, /* ... */ args) {
+function call(fn /*, ... */) {
   var calledArgs = selectArgs(arguments, 1);
   var thisArg = calledArgs.pop();
   return fn.apply(thisArg, calledArgs);
@@ -63,8 +63,8 @@ function call(fn, /* ... */ args) {
  * Apply
  */
 
-function apply(fn, args/*, thisArg*/) {
-  return fn.apply(arguments[2], args);
+function apply(fn, argArray, thisArg) {
+  return fn.apply(thisArg, argArray);
 }
 
 
@@ -90,18 +90,18 @@ function getCurryFn(arity) {
 
 function makeCurryFn(arity) {
   var cases = '';
-  var args = ['_0'];
+  var curriedArgs = ['_0'];
   for (var ii = 1; ii < arity; ii++) {
     cases +=
       '      case ' + ii + ': return getCurryFn(' + (arity - ii) + ')(getCurryFn, function() {\n'+
-      '        var args = ['+args.join(',')+'];\n'+
+      '        var args = ['+curriedArgs.join(',')+'];\n'+
       '        for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);\n'+
       '        return fn.apply(this, args);\n'+
       '      });\n';
-    args.push('_' + ii);
+    curriedArgs.push('_' + ii);
   }
   return (
-    '  function curried('+args.join(',')+') {\n'+
+    '  function curried('+curriedArgs.join(',')+') {\n'+
     '    switch (arguments.length) {\n'+
     '      case 0: return curried;\n'+
     cases +
@@ -395,13 +395,13 @@ function map(fn) {
     var iterators = selectArgs(iterables, 1, iterator);
     var arity = iterators.length;
     return function () {
-      var args = new Array(arity);
+      var argArray = new Array(arity);
       for (var ii = 0; ii < arity; ii++) {
         var step = iterators[ii].next();
         if (step.done) return step;
-        args[ii] = step.value;
+        argArray[ii] = step.value;
       }
-      return iteratorValue(fn.apply(null, args));
+      return iteratorValue(fn.apply(null, argArray));
     }
   });
 }
@@ -630,11 +630,11 @@ function concat(indexed1, indexed2) {
   return result;
 }
 
-function selectArgs(args, skip, mapper) {
+function selectArgs(argsObj, skip, mapper) {
   skip = skip || 0;
-  var mapped = new Array(Math.max(0, args.length - skip));
-  for (var ii = skip; ii < args.length; ii++) {
-    mapped[ii - skip] = mapper ? mapper(args[ii]) : args[ii];
+  var mapped = new Array(Math.max(0, argsObj.length - skip));
+  for (var ii = skip; ii < argsObj.length; ii++) {
+    mapped[ii - skip] = mapper ? mapper(argsObj[ii]) : argsObj[ii];
   }
   return mapped;
 }
@@ -649,7 +649,7 @@ var loda = {
 
   'arity': arity,
   'call': call,
-  'apply': apply,
+  'apply': curry(apply, 2),
   'curry': curry,
   'compose': compose,
   'composeLeft': composeLeft,
