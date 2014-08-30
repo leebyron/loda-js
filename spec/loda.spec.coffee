@@ -56,58 +56,58 @@ describe 'loda', ->
       expect(min(2)(3)).toEqual 2
 
     it 'adds numbers', ->
-      expect(add(1,2)).toEqual 3
-      expect(add(1,2,3)).toEqual 6
-      expect(add(1,2,3,4)).toEqual 10
-      expect(add(1,2,3,4,5)).toEqual 15
+      expect(add 1,2).toEqual 3
+      expect(add 1,2,3).toEqual 6
+      expect(add 1,2,3,4).toEqual 10
+      expect(add 1,2,3,4,5).toEqual 15
 
     it 'adds strings', ->
-      expect(add('A','B')).toEqual 'AB'
-      expect(add('A','B','C')).toEqual 'ABC'
-      expect(add('A','B','C','D')).toEqual 'ABCD'
-      expect(add('A','B','C','D','E')).toEqual 'ABCDE'
+      expect(add 'A','B').toEqual 'AB'
+      expect(add 'A','B','C').toEqual 'ABC'
+      expect(add 'A','B','C','D').toEqual 'ABCD'
+      expect(add 'A','B','C','D','E').toEqual 'ABCDE'
 
     it 'subtracts numbers', ->
-      expect(sub(1,2)).toEqual -1
-      expect(sub(1,2,3)).toEqual -4
-      expect(sub(1,2,3,4)).toEqual -8
-      expect(sub(1,2,3,4,5)).toEqual -13
+      expect(sub 1,2).toEqual -1
+      expect(sub 1,2,3).toEqual -4
+      expect(sub 1,2,3,4).toEqual -8
+      expect(sub 1,2,3,4,5).toEqual -13
 
     it 'multiplies numbers', ->
-      expect(mul(1,2)).toEqual 2
-      expect(mul(1,2,3)).toEqual 6
-      expect(mul(1,2,3,4)).toEqual 24
-      expect(mul(1,2,3,4,5)).toEqual 120
+      expect(mul 1,2).toEqual 2
+      expect(mul 1,2,3).toEqual 6
+      expect(mul 1,2,3,4).toEqual 24
+      expect(mul 1,2,3,4,5).toEqual 120
 
     it 'divides numbers', ->
-      expect(div(1,2)).toEqual 1/2
-      expect(div(1,2,3)).toEqual 1/6
-      expect(div(1,2,3,4)).toEqual 1/24
-      expect(div(1,2,3,4,5)).toEqual 1/120
+      expect(div 1,2).toEqual 1/2
+      expect(div 1,2,3).toEqual 1/6
+      expect(div 1,2,3,4).toEqual 1/24
+      expect(div 1,2,3,4,5).toEqual 1/120
 
     it 'mods numbers', ->
-      expect(mod(9973,1301)).toEqual 866
-      expect(mod(9973,1301,131)).toEqual 80
-      expect(mod(9973,1301,131,37)).toEqual 6
-      expect(mod(9973,1301,131,37,3)).toEqual 0
+      expect(mod 9973,1301).toEqual 866
+      expect(mod 9973,1301,131).toEqual 80
+      expect(mod 9973,1301,131,37).toEqual 6
+      expect(mod 9973,1301,131,37,3).toEqual 0
 
     it 'raises numbers to power', ->
-      expect(pow(2,3)).toEqual 8
-      expect(pow(2,3,4)).toEqual 4096
-      expect(pow(2,3,4,5)).toEqual 1.152921504606847e+18
-      expect(pow(2,3,4,5,6)).toEqual 2.3485425827738332e+108
+      expect(pow 2,3).toEqual 8
+      expect(pow 2,3,4).toEqual 4096
+      expect(pow 2,3,4,5).toEqual 1.152921504606847e+18
+      expect(pow 2,3,4,5,6).toEqual 2.3485425827738332e+108
 
     it 'finds maximum of all numbers', ->
-      expect(max(1,2)).toEqual 2
-      expect(max(1,2,3)).toEqual 3
-      expect(max(1,2,3,4)).toEqual 4
-      expect(max(1,2,3,4,5)).toEqual 5
+      expect(max 1,2).toEqual 2
+      expect(max 1,2,3).toEqual 3
+      expect(max 1,2,3,4).toEqual 4
+      expect(max 1,2,3,4,5).toEqual 5
 
     it 'finds minimum of all numbers', ->
-      expect(min(1,2)).toEqual 1
-      expect(min(1,2,3)).toEqual 1
-      expect(min(1,2,3,4)).toEqual 1
-      expect(min(1,2,3,4,5)).toEqual 1
+      expect(min 1,2).toEqual 1
+      expect(min 1,2,3).toEqual 1
+      expect(min 1,2,3,4).toEqual 1
+      expect(min 1,2,3,4,5).toEqual 1
 
 
   describe 'comparison', ->
@@ -118,3 +118,45 @@ describe 'loda', ->
       expect(lteq(1)(2)).toBe true
       expect(gt(1)(2)).toBe false
       expect(gteq(1)(2)).toBe false
+
+    it 'compares equality', ->
+      expect(eq 1, 1).toBe true
+      expect(eq 1, 1, 1).toBe true
+      expect(eq 1, 1, 1, 1).toBe true
+
+    it 'uses fantasy land equality spec', ->
+      class FantasySpec
+        constructor: (@value) ->
+        equals: (other) -> @value == other.value
+      f1 = new FantasySpec 3
+      f2 = new FantasySpec 3
+      f3 = new FantasySpec 3
+      expect(f1 == f2).toBe false
+      expect(eq f1, f2, f3).toBe true
+
+    it 'compares less than (increasing args)', ->
+      expect(lt 1, 2).toBe true
+      expect(lt 1, 2, 3).toBe true
+      expect(lt 1, 2, 3, 2).toBe false
+      expect(lt 1, 2, 3, 3).toBe false
+      expect(lt 1, 2, 3, 4).toBe true
+
+    it 'compares less than or equal (not decreasing args)', ->
+      expect(lteq 1, 2).toBe true
+      expect(lteq 1, 1).toBe true
+      expect(lteq 1, 2, 2).toBe true
+      expect(lteq 1, 2, 3, 2).toBe false
+      expect(lteq 1, 2, 2, 3).toBe true
+
+    it 'compares greater than (decreasing args)', ->
+      expect(gt 2, 1).toBe true
+      expect(gt 3, 2, 1).toBe true
+      expect(gt 3, 2, 1, 2).toBe false
+      expect(gt 3, 2, 1, 1).toBe false
+
+    it 'compares greater than or equal (not increasing args)', ->
+      expect(gteq 2, 1).toBe true
+      expect(gteq 1, 1).toBe true
+      expect(gteq 3, 2, 1).toBe true
+      expect(gteq 3, 2, 1, 2).toBe false
+      expect(gteq 3, 2, 1, 1).toBe true

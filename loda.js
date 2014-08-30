@@ -317,7 +317,7 @@ function indexedIterable(indexed) {
 function keyedIterable(keyed) {
   return new Iterable(function() {
     var ii = 0;
-    var keys = Object.keys(keyed);
+    var keys = Object.keys(keyed); // TODO: replace this with for hasOwn
     return function () {
       if (ii === keys.length) {
         return ITERATOR_DONE;
@@ -585,35 +585,35 @@ function append(array, val) {
 // curry(compose(partial(reduce, add), tuple), 2);
 
 
-var add = reduceArgs(add2);
+var add = curry(reduceArgs(add2), 2);
 
-var sub = reduceArgs(function (x, y) {
+var sub = curry(reduceArgs(function (x, y) {
   return x - y
-});
+}), 2);
 
-var mul = reduceArgs(function (x, y) {
+var mul = curry(reduceArgs(function (x, y) {
   return x * y
-});
+}), 2);
 
-var div = reduceArgs(function (x, y) {
+var div = curry(reduceArgs(function (x, y) {
   return x / y
-});
+}), 2);
 
-var mod = reduceArgs(function (x, y) {
+var mod = curry(reduceArgs(function (x, y) {
   return x % y
-});
+}), 2);
 
-var pow = reduceArgs(function (x, y) {
+var pow = curry(reduceArgs(function (x, y) {
   return Math.pow(x, y)
-});
+}), 2);
 
-var max = reduceArgs(function (x, y) {
+var max = curry(reduceArgs(function (x, y) {
   return x > y ? x : y;
-});
+}), 2);
 
-var min = reduceArgs(function (x, y) {
+var min = curry(reduceArgs(function (x, y) {
   return x < y ? x : y;
-});
+}), 2);
 
 
 /**
@@ -621,25 +621,25 @@ var min = reduceArgs(function (x, y) {
  * ----------
  */
 
-var eq = compareArgs(function (x, y) {
-  return x && x.equals ? x.equals(y) : Object.is ? Object.is(x, y) : x === y;
-});
+var eq = curry(compareArgs(function (x, y) {
+  return x && x.equals ? x.equals(y) : x === y;
+}), 2);
 
-var lt = compareArgs(function (x, y) {
+var lt = curry(compareArgs(function (x, y) {
   return x < y;
-});
+}), 2);
 
-var lteq = compareArgs(function (x, y) {
+var lteq = curry(compareArgs(function (x, y) {
   return x <= y;
-});
+}), 2);
 
-var gt = compareArgs(function (x, y) {
+var gt = curry(compareArgs(function (x, y) {
   return x > y;
-});
+}), 2);
 
-var gteq = compareArgs(function (x, y) {
+var gteq = curry(compareArgs(function (x, y) {
   return x >= y;
-});
+}), 2);
 
 
 /**
@@ -719,20 +719,20 @@ var loda = {
   'reduceArgs': reduceArgs,
   'compareArgs': compareArgs,
 
-  'add': curry(add, 2),
-  'sub': curry(sub, 2),
-  'mul': curry(mul, 2),
-  'div': curry(div, 2),
-  'mod': curry(mod, 2),
-  'pow': curry(pow, 2),
-  'max': curry(max, 2),
-  'min': curry(min, 2),
+  'add': add,
+  'sub': sub,
+  'mul': mul,
+  'div': div,
+  'mod': mod,
+  'pow': pow,
+  'max': max,
+  'min': min,
 
-  'eq': curry(eq, 2),
-  'lt': curry(lt, 2),
-  'lteq': curry(lteq, 2),
-  'gt': curry(gt, 2),
-  'gteq': curry(gteq, 2),
+  'eq': eq,
+  'lt': lt,
+  'lteq': lteq,
+  'gt': gt,
+  'gteq': gteq,
 }
 
 module.exports = loda;
