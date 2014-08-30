@@ -1,3 +1,6 @@
+var exec = require('child_process').exec;
+var uglify = require('uglify-js');
+
 module.exports = function(grunt) {
   grunt.initConfig({
     jshint: {
@@ -6,7 +9,6 @@ module.exports = function(grunt) {
         curly: false,
         eqeqeq: true,
         eqnull: true,
-        //esnext: true,
         expr: true,
         forin: true,
         freeze: true,
@@ -31,12 +33,16 @@ module.exports = function(grunt) {
         }]
       }
     },
+    jasmine_node: {
+      options: {
+        coffee: true,
+      },
+      all: ['spec/']
+    },
     stats: {
       build: {}
     }
   });
-
-  var uglify = require('uglify-js');
 
   grunt.registerMultiTask('build', function () {
     this.files.map(function (file) {
@@ -61,9 +67,6 @@ module.exports = function(grunt) {
       grunt.file.write(file.dest, result.code)
     });
   });
-
-
-  var exec = require('child_process').exec;
 
   grunt.registerMultiTask('stats', function () {
     var done = this.async();
@@ -100,15 +103,7 @@ module.exports = function(grunt) {
     })
   });
 
-
   grunt.loadNpmTasks('grunt-contrib-jshint');
-  // grunt.loadNpmTasks('grunt-contrib-copy');
-  // grunt.loadNpmTasks('grunt-contrib-clean');
-  // grunt.loadNpmTasks('grunt-jest');
-  // grunt.loadNpmTasks('grunt-release');
-
-  // grunt.registerTask('lint', 'Lint all source javascript', ['jshint']);
-  // grunt.registerTask('build', 'Build distributed javascript', ['clean', 'smash', 'copy']);
-  // grunt.registerTask('test', 'Test built javascript', ['jest']);
-  grunt.registerTask('default', 'Lint, build and test.', ['jshint', 'build', 'stats']);
+  grunt.loadNpmTasks('grunt-jasmine-node');
+  grunt.registerTask('default', 'Lint, build and test.', ['jshint', 'build', 'jasmine_node', 'stats']);
 }
