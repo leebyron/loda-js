@@ -59,6 +59,12 @@ describe 'loda', ->
       expect(add(1,2,3,4)).toEqual 10
       expect(add(1,2,3,4,5)).toEqual 15
 
+    it 'adds strings', ->
+      expect(add('A','B')).toEqual 'AB'
+      expect(add('A','B','C')).toEqual 'ABC'
+      expect(add('A','B','C','D')).toEqual 'ABCD'
+      expect(add('A','B','C','D','E')).toEqual 'ABCDE'
+
     it 'subtracts numbers', ->
       expect(sub(1,2)).toEqual -1
       expect(sub(1,2,3)).toEqual -4
