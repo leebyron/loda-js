@@ -8,6 +8,7 @@ describe 'loda', ->
   it 'was installed', ->
     expect(curry).toBe loda.curry
 
+
   describe 'iterator', ->
 
     it 'is idempotent', ->
@@ -41,6 +42,7 @@ describe 'loda', ->
       expect(i.next().value).toEqual 101
       expect(i.next().value).toEqual 102
 
+
   describe 'math', ->
 
     it 'has curried methods', ->
@@ -70,3 +72,49 @@ describe 'loda', ->
       expect(sub(1,2,3)).toEqual -4
       expect(sub(1,2,3,4)).toEqual -8
       expect(sub(1,2,3,4,5)).toEqual -13
+
+    it 'multiplies numbers', ->
+      expect(mul(1,2)).toEqual 2
+      expect(mul(1,2,3)).toEqual 6
+      expect(mul(1,2,3,4)).toEqual 24
+      expect(mul(1,2,3,4,5)).toEqual 120
+
+    it 'divides numbers', ->
+      expect(div(1,2)).toEqual 1/2
+      expect(div(1,2,3)).toEqual 1/6
+      expect(div(1,2,3,4)).toEqual 1/24
+      expect(div(1,2,3,4,5)).toEqual 1/120
+
+    it 'mods numbers', ->
+      expect(mod(9973,1301)).toEqual 866
+      expect(mod(9973,1301,131)).toEqual 80
+      expect(mod(9973,1301,131,37)).toEqual 6
+      expect(mod(9973,1301,131,37,3)).toEqual 0
+
+    it 'raises numbers to power', ->
+      expect(pow(2,3)).toEqual 8
+      expect(pow(2,3,4)).toEqual 4096
+      expect(pow(2,3,4,5)).toEqual 1.152921504606847e+18
+      expect(pow(2,3,4,5,6)).toEqual 2.3485425827738332e+108
+
+    it 'finds maximum of all numbers', ->
+      expect(max(1,2)).toEqual 2
+      expect(max(1,2,3)).toEqual 3
+      expect(max(1,2,3,4)).toEqual 4
+      expect(max(1,2,3,4,5)).toEqual 5
+
+    it 'finds minimum of all numbers', ->
+      expect(min(1,2)).toEqual 1
+      expect(min(1,2,3)).toEqual 1
+      expect(min(1,2,3,4)).toEqual 1
+      expect(min(1,2,3,4,5)).toEqual 1
+
+
+  describe 'comparison', ->
+
+    it 'has curried methods', ->
+      expect(eq(1)(2)).toBe false
+      expect(lt(1)(2)).toBe true
+      expect(lteq(1)(2)).toBe true
+      expect(gt(1)(2)).toBe false
+      expect(gteq(1)(2)).toBe false

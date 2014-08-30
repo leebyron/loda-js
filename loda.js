@@ -608,11 +608,11 @@ var pow = reduceArgs(function (x, y) {
 });
 
 var max = reduceArgs(function (x, y) {
-  return Math.max.apply(null, arguments)
+  return x > y ? x : y;
 });
 
 var min = reduceArgs(function (x, y) {
-  return Math.min.apply(null, arguments)
+  return x < y ? x : y;
 });
 
 
