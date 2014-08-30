@@ -457,7 +457,7 @@ function reduce(fn, iterable) {
     reduced = iterable;
   } else {
     iter = iterator(iterable);
-    reduced = step.value;
+    reduced = iter.next().value;
   }
   while (true) {
     step = iter.next();
@@ -489,7 +489,7 @@ function compare(fn, iterable) {
     left = iterable;
   } else {
     iter = iterator(iterable);
-    left = step.value;
+    left = iter.next().value;
   }
   while (true) {
     step = iter.next();

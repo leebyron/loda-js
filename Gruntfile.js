@@ -26,30 +26,7 @@ module.exports = function(grunt) {
       all: ['loda.js', 'resources/*.js']
     },
     build: {
-      build: {
-        files: [{
-          src: 'loda.js',
-          dest: 'loda.min.js'
-        }]
-      }
-    },
-    jasmine_node: {
       options: {
-        coffee: true,
-      },
-      all: ['spec/']
-    },
-    stats: {
-      build: {}
-    }
-  });
-
-  grunt.registerMultiTask('build', function () {
-    this.files.map(function (file) {
-      var data = grunt.file.read(file.src);
-      var wrapper = grunt.file.read('./resources/universal-module.js');
-      var wrapped = wrapper.replace('"%MODULE%"', data);
-      var result = uglify.minify(wrapped, {
         fromString: true,
         mangle: {
           toplevel: true
@@ -63,33 +40,59 @@ module.exports = function(grunt) {
           max_line_len: 2048,
         },
         reserved: ['module', 'define', 'loda']
-      });
-      grunt.file.write(file.dest, result.code)
-    });
+      },
+      all: {
+        wrapper: './resources/universal-module.js',
+        src: 'loda.js',
+        dest: 'loda.min.js'
+      }
+    },
+    jasmine_node: {
+      options: {
+        coffee: true,
+        verbose: true,
+      },
+      all: ['spec/']
+    },
+    stats: {
+      all: {
+        src: 'loda.js',
+        min: 'loda.min.js'
+      }
+    }
+  });
+
+  grunt.registerMultiTask('build', function () {
+    var data = grunt.file.read(this.data.src);
+    var wrapper = grunt.file.read(this.data.wrapper);
+    var wrapped = wrapper.replace('"%MODULE%"', data);
+    var result = uglify.minify(wrapped, this.options());
+    grunt.file.write(this.data.dest, result.code);
   });
 
   grunt.registerMultiTask('stats', function () {
+    var data = this.data;
     var done = this.async();
-    exec('cat loda.js | wc -c', function (error, out) {
+    exec('cat '+data.src+' | wc -c', function (error, out) {
       if (error) throw new Error(error);
       var rawBytes = parseInt(out);
       console.log('     Concatenated: ' +
         (rawBytes + ' bytes').cyan);
-      exec('gzip -c loda.js | wc -c', function (error, out) {
+      exec('gzip -c '+data.src+' | wc -c', function (error, out) {
         if (error) throw new Error(error);
         var zippedBytes = parseInt(out);
         var pctOfA = Math.floor(10000 * (1 - (zippedBytes / rawBytes))) / 100;
         console.log('       Compressed: ' +
           (zippedBytes + ' bytes').cyan + ' ' +
           (pctOfA + '%').green);
-        exec('cat loda.min.js | wc -c', function (error, out) {
+        exec('cat '+data.min+' | wc -c', function (error, out) {
           if (error) throw new Error(error);
           var minifiedBytes = parseInt(out);
           var pctOfA = Math.floor(10000 * (1 - (minifiedBytes / rawBytes))) / 100;
           console.log('         Minified: ' +
             (minifiedBytes + ' bytes').cyan + ' ' +
             (pctOfA + '%').green);
-          exec('gzip -c loda.min.js | wc -c', function (error, out) {
+          exec('gzip -c '+data.min+' | wc -c', function (error, out) {
             if (error) throw new Error(error);
             var zippedMinBytes = parseInt(out);
             var pctOfA = Math.floor(10000 * (1 - (zippedMinBytes / rawBytes))) / 100;
@@ -105,5 +108,5 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-jasmine-node');
-  grunt.registerTask('default', 'Lint, build and test.', ['jshint', 'build', 'jasmine_node', 'stats']);
+  grunt.registerTask('default', ['jshint', 'build', 'jasmine_node', 'stats']);
 }

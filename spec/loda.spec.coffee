@@ -56,6 +56,24 @@ describe 'loda', ->
 
     describe 'reify', ->
 
+      it 'can produce an array', ->
+        mapSq = map (x) -> x * x
+        m = mapSq [1,2,3]
+        a = array m
+        expect(a).toEqual [1,4,9]
+
+      it 'can produce an object', ->
+        mapUpperSq = map ([k, v]) -> [k.toUpperCase(), v * v]
+        m = mapUpperSq { a: 1, b: 2, c: 3 }
+        o = object m
+        expect(o).toEqual { A: 1, B: 4, C: 9 }
+
+      it 'can produce a string', ->
+        mapSq = map (x) -> x * x
+        m = mapSq [1,2,3]
+        s = string m
+        expect(s).toEqual '149'
+
 
   describe 'Iterable Computations', ->
 
