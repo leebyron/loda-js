@@ -446,8 +446,6 @@ function reduce(fn, iterable) {
     reduced = iterable;
   } else {
     iter = iterator(iterable);
-    step = iter.next();
-    if (step.done) return reduced;
     reduced = step.value;
   }
   while (true) {
@@ -468,6 +466,27 @@ function reduced(value) {
 
 var REDUCED = { value : undefined };
 
+
+/**
+ * Compare
+ */
+function compare(fn, iterable) {
+  var left = arguments[2];
+  var iter, step;
+  if (left) {
+    iter = iterator(left);
+    left = iterable;
+  } else {
+    iter = iterator(iterable);
+    left = step.value;
+  }
+  while (true) {
+    step = iter.next();
+    if (step.done) return true;
+    if (!fn(left, step.value)) return false;
+    left = step.value;
+  }
+}
 
 
 
@@ -499,7 +518,7 @@ function juxt(/* ... */) {
 /**
  * Reduce Args
  */
-function reduceArgs(fn /* ... */) {
+var reduceArgs = curry(function (fn /* ... */) {
   var reduced = arguments[1];
   var numArgs = arguments.length;
   var ii = 1;
@@ -508,7 +527,19 @@ function reduceArgs(fn /* ... */) {
     if (reduced === REDUCED) return REDUCED.value;
   }
   return reduced;
-}
+}, 2);
+
+var compareArgs = curry(function (fn /* ... */) {
+  var left = arguments[1];
+  var numArgs = arguments.length;
+  var ii = 1;
+  while (++ii < numArgs) {
+    var right = arguments[ii];
+    if (!fn(left, right)) return false;
+    left = right;
+  }
+  return true;
+}, 2);
 
 
 
@@ -554,35 +585,33 @@ function append(array, val) {
 // curry(compose(partial(reduce, add), tuple), 2);
 
 
-var add = partial(reduceArgs, add2);
+var add = reduceArgs(add2);
 
-
-
-var sub = curry(function (y, x) {
+var sub = reduceArgs(function (x, y) {
   return x - y
 });
 
-var mul = curry(function (y, x) {
+var mul = reduceArgs(function (x, y) {
   return x * y
 });
 
-var div = curry(function (y, x) {
+var div = reduceArgs(function (x, y) {
   return x / y
 });
 
-var mod = curry(function (y, x) {
+var mod = reduceArgs(function (x, y) {
   return x % y
 });
 
-var pow = curry(function (y, x) {
+var pow = reduceArgs(function (x, y) {
   return Math.pow(x, y)
 });
 
-var max = curry(function (y, x) {
+var max = reduceArgs(function (x, y) {
   return Math.max.apply(null, arguments)
 });
 
-var min = curry(function (y, x) {
+var min = reduceArgs(function (x, y) {
   return Math.min.apply(null, arguments)
 });
 
@@ -592,18 +621,25 @@ var min = curry(function (y, x) {
  * ----------
  */
 
-// TODO
-// lt, lteq, gt, gteq
-
-function is(x, y) {
+var eq = compareArgs(function (x, y) {
   return x && x.equals ? x.equals(y) : Object.is ? Object.is(x, y) : x === y;
-}
+});
 
-function eq(x, y) {
-  return x === y;
-}
+var lt = compareArgs(function (x, y) {
+  return x < y;
+});
 
+var lteq = compareArgs(function (x, y) {
+  return x <= y;
+});
 
+var gt = compareArgs(function (x, y) {
+  return x > y;
+});
+
+var gteq = compareArgs(function (x, y) {
+  return x >= y;
+});
 
 
 /**
@@ -676,22 +712,27 @@ var loda = {
   'count': count,
   'reduce': curry(reduce, 2),
   'reduced': reduced,
+  'compare': curry(compare, 2),
 
   'tuple': tuple,
   'juxt': juxt,
-  'reduceArgs': curry(reduceArgs, 2),
+  'reduceArgs': reduceArgs,
+  'compareArgs': compareArgs,
 
   'add': curry(add, 2),
-  'sub': sub,
-  'mul': mul,
-  'div': div,
-  'mod': mod,
-  'pow': pow,
-  'max': max,
-  'min': min,
+  'sub': curry(sub, 2),
+  'mul': curry(mul, 2),
+  'div': curry(div, 2),
+  'mod': curry(mod, 2),
+  'pow': curry(pow, 2),
+  'max': curry(max, 2),
+  'min': curry(min, 2),
 
-  'is': curry(is, 2),
-  'eq': curry(eq, 2)
+  'eq': curry(eq, 2),
+  'lt': curry(lt, 2),
+  'lteq': curry(lteq, 2),
+  'gt': curry(gt, 2),
+  'gteq': curry(gteq, 2),
 }
 
 module.exports = loda;

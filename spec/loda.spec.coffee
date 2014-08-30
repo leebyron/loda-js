@@ -40,3 +40,20 @@ describe 'loda', ->
       expect(i.next().value).toEqual 100
       expect(i.next().value).toEqual 101
       expect(i.next().value).toEqual 102
+
+  describe 'math', ->
+
+    it 'has curried methods', ->
+      expect(add(2)(3)).toEqual 5
+      expect(mul(2)(3)).toEqual 6
+      expect(div(2)(3)).toEqual 2/3
+      expect(mod(2)(3)).toEqual 2
+      expect(pow(2)(3)).toEqual 8
+      expect(max(2)(3)).toEqual 3
+      expect(min(2)(3)).toEqual 2
+
+    it 'adds numbers', ->
+      expect(add(1,2)).toEqual 3
+      expect(add(1,2,3)).toEqual 6
+      expect(add(1,2,3,4)).toEqual 10
+      expect(add(1,2,3,4,5)).toEqual 15
