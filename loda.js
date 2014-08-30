@@ -358,6 +358,15 @@ function object(iterable) {
 
 var string = partial(reduce, add2, '');
 
+function each(iterable, sideEffect) {
+  var iter = iterator(iterable);
+  while (true) {
+    var step = iter.next();
+    if (step.done) return;
+    sideEffect && sideEffect(step.value);
+  }
+}
+
 
 
 
@@ -699,6 +708,7 @@ var loda = {
   'array': array,
   'object': object,
   'string': string,
+  'each': each,
 
   'isEmpty': isEmpty,
   'filter': curry(filter, 2),
