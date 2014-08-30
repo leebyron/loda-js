@@ -544,18 +544,6 @@ var compareArgs = curry(function (fn /* ... */) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * Array Helpers
  * -------------
@@ -616,9 +604,11 @@ var min = curry(reduceArgs(function (x, y) {
 }), 2);
 
 
+
+
 /**
- * Comparison
- * ----------
+ * Comparators
+ * -----------
  */
 
 var eq = curry(compareArgs(function (x, y) {
@@ -640,6 +630,8 @@ var gt = curry(compareArgs(function (x, y) {
 var gteq = curry(compareArgs(function (x, y) {
   return x >= y;
 }), 2);
+
+
 
 
 /**
@@ -677,8 +669,9 @@ function selectArgs(argsObj, skip, mapper) {
 
 
 
+
 /**
- * Here you go!
+ * Export public API
  */
 var loda = {
   'install': install,
@@ -718,6 +711,10 @@ var loda = {
   'juxt': juxt,
   'reduceArgs': reduceArgs,
   'compareArgs': compareArgs,
+
+  'get': get,
+  'set': set,
+  'append': append,
 
   'add': add,
   'sub': sub,
