@@ -78,12 +78,16 @@ function apply(fn, argArray, thisArg) {
 
 function curry(fn, arity) {
   arity = arity || fn.length;
-  return arity > 1 ? getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, fn) : fn;
+  return arity > 1 ?
+    getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, isCurried(fn) ? fn[CURRY_SYMBOL] : fn) :
+    fn;
 }
 
 function curryRight(fn, arity) {
   arity = arity || fn.length;
-  return arity > 1 ? getCurryRightFn(arity)(getCurryRightFn, CURRY_SYMBOL, fn) : fn;
+  return arity > 1 ?
+    getCurryRightFn(arity)(getCurryRightFn, CURRY_SYMBOL, isCurried(fn) ? fn[CURRY_SYMBOL] : fn) :
+    fn;
 }
 
 function isCurried(fn) {
@@ -124,7 +128,7 @@ function makeCurryFn(arity) {
     '    }\n'+
     '    return fn.apply(this, arguments);\n'+
     '  }\n'+
-    '  curried[curriedSymbol] = true;\n'+
+    '  curried[curriedSymbol] = fn;\n'+
     '  return curried;'
   );
 }
@@ -149,7 +153,7 @@ function makeCurryRightFn(arity) {
     '    }\n'+
     '    return fn.apply(this, arguments);\n'+
     '  }\n'+
-    '  curried[curriedSymbol] = true;\n'+
+    '  curried[curriedSymbol] = fn;\n'+
     '  return curried;'
   );
 }

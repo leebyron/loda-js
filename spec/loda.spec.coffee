@@ -44,8 +44,54 @@ describe 'loda', ->
 
     describe 'curry', ->
 
+      it 'returns a function of the same arity', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        curried = curry(fn)
+        rCurried = curryRight(fn)
+        expect(curried.length).toBe fn.length
+        expect(rCurried.length).toBe fn.length
 
-    describe 'isCurried', ->
+      it 'returns a function of a given arity', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        curried = curry(fn, 2)
+        rCurried = curryRight(fn, 2)
+        expect(curried.length).toBe 2
+        expect(rCurried.length).toBe 2
+
+      it 'curries a function from the left', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        curried = curry(fn)
+        expect(curried('A')('B', 'C')).toBe 'A-B-C'
+        expect(curried('A', 'B')('C')).toBe 'A-B-C'
+        expect(curried('A')('B')('C')).toBe 'A-B-C'
+
+      it 'curries a function from the right', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        rCurried = curryRight(fn)
+        expect(rCurried('A')('B', 'C')).toBe 'B-C-A'
+        expect(rCurried('A', 'B')('C')).toBe 'C-A-B'
+        expect(rCurried('A')('B')('C')).toBe 'C-B-A'
+
+      it 'can be re-curried', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        rCurried = curryRight(fn)
+        curried = curry(rCurried)
+        expect(curried('A')('B')('C')).toBe 'A-B-C'
+
+      it 'can be re-curried once partially applied', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        rCurried = curryRight(fn)
+        withA = rCurried('A')
+        curried = curry(withA)
+        expect(curried('B')('C')).toBe 'B-C-A'
+
+      it 'can be detected as curried', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        curried = curry(fn)
+        rCurried = curryRight(fn)
+        expect(isCurried fn).toBe false
+        expect(isCurried curried).toBe true
+        expect(isCurried rCurried).toBe true
 
 
     describe 'compose', ->
