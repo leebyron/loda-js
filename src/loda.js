@@ -77,17 +77,16 @@ function apply(fn, argArray, thisArg) {
 
 function curry(fn, arity) {
   arity = arity || fn.length;
-  return arity > 1 ? getCurryFn(arity)(getCurryFn, fn) : fn;
+  return arity > 1 ? getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, fn) : fn;
 }
 
 // Internal
 
+var CURRY_SYMBOL = typeof Symbol === 'function' ? Symbol() : '@__curried__@';
 var CURRY_CACHE = [];
 
 function getCurryFn(arity) {
-  return CURRY_CACHE[arity] || (CURRY_CACHE[arity] =
-    new Function('getCurryFn', 'fn', makeCurryFn(arity)) /* jshint ignore: line */
-  );
+  return CURRY_CACHE[arity] || (CURRY_CACHE[arity] = makeCurryFn(arity));
 }
 
 function makeCurryFn(arity) {
@@ -95,14 +94,14 @@ function makeCurryFn(arity) {
   var curriedArgs = ['_0'];
   for (var ii = 1; ii < arity; ii++) {
     cases +=
-      '      case ' + ii + ': return getCurryFn(' + (arity - ii) + ')(getCurryFn, function() {\n'+
+      '      case ' + ii + ': return getCurryFn(' + (arity - ii) + ')(getCurryFn, curriedSymbol, function() {\n'+
       '        var args = ['+curriedArgs.join(',')+'];\n'+
       '        for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);\n'+
       '        return fn.apply(this, args);\n'+
       '      });\n';
     curriedArgs.push('_' + ii);
   }
-  return (
+  return new Function('getCurryFn', 'curriedSymbol', 'fn', /* jshint ignore: line */
     '  function curried('+curriedArgs.join(',')+') {\n'+
     '    switch (arguments.length) {\n'+
     '      case 0: return curried;\n'+
@@ -110,8 +109,13 @@ function makeCurryFn(arity) {
     '    }\n'+
     '    return fn.apply(this, arguments);\n'+
     '  }\n'+
+    '  curried[curriedSymbol] = true;\n'+
     '  return curried;'
   );
+}
+
+function isCurried(fn) {
+  return !!fn[CURRY_SYMBOL];
 }
 
 
@@ -216,25 +220,35 @@ function complement(fn) {
  */
 function memo(fn) {
   var memoized = function () {
-    var arg = reduce(argCache, memoized[CACHE_SYMBOL], arguments);
-    return arg[CACHE_SYMBOL] || (arg[CACHE_SYMBOL] = fn.apply(this, arguments));
+    var arg = reduce(argCache, memoized[MEMO_CACHE_SYMBOL], arguments);
+    return arg.hasOwnProperty(MEMO_CACHE_SYMBOL) ?
+      arg[MEMO_CACHE_SYMBOL] :
+      (arg[MEMO_CACHE_SYMBOL] = fn.apply(this, arguments));
   }
-  fn.length && (memoized = arity(fn.length, memoized));
-  memoized[CACHE_SYMBOL] = {};
+  memoized = isCurried(fn) ?
+    curry(memoized, fn.length) :
+    fn.length ?
+      arity(fn.length, memoized) :
+      memoized;
+  memoized[MEMO_CACHE_SYMBOL] = {};
   return memoized;
 }
 
-var CACHE_SYMBOL = typeof Symbol === 'function' ? Symbol() : '@__memocache__@';
+var MEMO_CACHE_SYMBOL = typeof Symbol === 'function' ? Symbol() : '@__memocache__@';
 
-function argCache(arg, cache) {
+function argCache(cache, arg) {
   return cache[arg] || (cache[arg] = {})
+}
+
+function isMemoized(fn) {
+  return !!fn[MEMO_CACHE_SYMBOL];
 }
 
 /**
  * Clear memoized function's cache
  */
-function clear(memoized) {
-  memoized && memoized[CACHE_SYMBOL] && (memoized[CACHE_SYMBOL] = {})
+function clearMemo(memoized) {
+  memoized && memoized[MEMO_CACHE_SYMBOL] && (memoized[MEMO_CACHE_SYMBOL] = {})
   return memoized;
 }
 
@@ -704,6 +718,7 @@ var loda = {
   'call': call,
   'apply': curry(apply, 2),
   'curry': curry,
+  'isCurried': isCurried,
   'compose': compose,
   'composeLeft': composeLeft,
   'partial': partial,
@@ -713,7 +728,8 @@ var loda = {
   'complement': complement,
 
   'memo': memo,
-  'clear': clear,
+  'isMemoized': isMemoized,
+  'clearMemo': clearMemo,
 
   'iterable': iterable,
   'iterator': iterator,

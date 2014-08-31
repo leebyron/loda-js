@@ -14,6 +14,73 @@ describe 'loda', ->
 
   describe 'Memoization', ->
 
+    it 'returns a function of the same arity', ->
+      dashing = (a, b, c) -> [a,b,c].join '-'
+      memoized = memo(dashing)
+      expect(memoized.length).toBe dashing.length
+
+    it 'memoizes a function based on arguments', ->
+      dashing = jasmine.createSpy().andCallFake (a, b, c) -> [a,b,c].join '-'
+      memoized = memo(dashing)
+
+      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(dashing).toHaveBeenCalledWith 'A', 'B', 'C'
+
+      dashing.reset()
+      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(dashing).not.toHaveBeenCalled
+
+      dashing.reset()
+      expect(memoized('C', 'B', 'A')).toEqual 'C-B-A'
+      expect(dashing).toHaveBeenCalledWith 'C', 'B', 'A'
+
+      dashing.reset()
+      expect(memoized('C', 'B', 'A')).toEqual 'C-B-A'
+      expect(dashing).not.toHaveBeenCalled
+
+    it 'can be cleared', ->
+      dashing = jasmine.createSpy().andCallFake (a, b, c) -> [a,b,c].join '-'
+      memoized = memo(dashing)
+
+      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(dashing).toHaveBeenCalledWith 'A', 'B', 'C'
+
+      dashing.reset()
+      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(dashing).not.toHaveBeenCalled
+
+      clearMemo(memoized)
+
+      dashing.reset()
+      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(dashing).toHaveBeenCalledWith 'A', 'B', 'C'
+
+    it 'can be detected as memoized', ->
+      expect(isMemoized add).toBe false
+      memoized = memo add
+      expect(isMemoized memoized).toBe true
+
+    it 'returns a curried function if given a curried function', ->
+      spy = jasmine.createSpy()
+      spyAdd = curry(
+        () -> spy.apply(null, arguments); add.apply(null, arguments),
+        2
+      )
+      memoized = memo(spyAdd)
+      expect(isCurried memoized).toBe true
+
+      add1 = spyAdd(1)
+      expect(spy).not.toHaveBeenCalled
+      expect(add1 1).toBe 2
+      expect(spy).toHaveBeenCalledWith 1, 1
+
+      spy.reset()
+      anotherAdd1 = spyAdd(1)
+      expect(anotherAdd1).not.toBe add1
+      expect(spy).not.toHaveBeenCalled
+      expect(add1 1).toBe 2
+      expect(spy).not.toHaveBeenCalled
+
 
   describe 'Iterables', ->
 
