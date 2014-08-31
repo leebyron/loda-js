@@ -38,12 +38,10 @@ describe 'loda', ->
 
     describe 'call', ->
 
-      it 'uses the last argument as this', ->
-        thisArg = {}
+      it 'calls the function with all args', ->
         spy = jasmine.createSpy()
-        call spy, 1, 2, 3, thisArg
+        call spy, 1, 2, 3
         expect(spy).toHaveBeenCalledWith 1, 2, 3
-        expect(spy.mostRecentCall.object).toBe thisArg
 
 
     describe 'apply', ->
@@ -613,6 +611,54 @@ describe 'loda', ->
 
   describe 'Argument Computations', ->
 
+    describe 'tuple', ->
+
+      it 'returns an array of the arguments provided', ->
+        expect(tuple 1, 2, 3).toEqual [ 1, 2, 3 ]
+
+
+    describe 'hold', ->
+
+      it 'applies the held arguments to a provided function', ->
+        hold123 = hold 1, 2, 3
+        expect(hold123 add).toBe 6
+        expect(hold123 sub).toBe -4
+
+
+    describe 'juxt', ->
+
+      it 'creates a fn which applies arguments to a set of functions', ->
+        maths = juxt add(1), sub(1), mul(2)
+        expect(maths 5).toEqual [ 6, 4, 10 ]
+
+      it 'useful for mapping a list-iterable to a kv-iterable', ->
+        records = [
+          { id: 4, name: 'Mark' },
+          { id: 5, name: 'Chris' },
+          { id: 6, name: 'Dustin' }
+        ]
+        pullID = map juxt get('id'), id
+        expect(
+          object pullID records
+        ).toEqual {
+          4: { id: 4, name: 'Mark' },
+          5: { id: 5, name: 'Chris' },
+          6: { id: 6, name: 'Dustin' }
+        }
+
+
+    describe 'knit', ->
+
+      it 'creates a fn which applies a tuple to a set of functions', ->
+        incAndDec = knit add(1), add(-1)
+        expect(incAndDec [ 10, 20 ]).toEqual [ 11, 19 ]
+
+      it 'useful for describing maps of kv-iterables', ->
+        negVals = map knit id, neg
+        expect(
+          object negVals { a: 1, b: 2, c: 3 }
+        ).toEqual { a: -1, b: -2, c: -3 }
+
 
   describe 'Array Helpers', ->
 
@@ -628,6 +674,9 @@ describe 'loda', ->
       expect(pow(2)(3)).toEqual 9
       expect(max(2)(3)).toEqual 3
       expect(min(2)(3)).toEqual 2
+
+    it 'neg is not curried, returns negative number', ->
+      expect(neg(2)).toEqual -2
 
     it 'adds numbers', ->
       expect(add 1,2).toEqual 3

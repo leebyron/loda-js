@@ -58,9 +58,7 @@ function makeArityFn(length) {
  */
 
 function call(fn /*, ... */) {
-  var calledArgs = selectArgs(arguments, 1);
-  var thisArg = calledArgs.pop();
-  return fn.apply(thisArg, calledArgs);
+  return fn.apply(null, selectArgs(arguments, 1));
 }
 
 
@@ -170,7 +168,7 @@ function compose() {
   var fns = arguments;
   var numFns = fns.length;
   if (numFns < 2) {
-    return numFns ? fns[0] : identity;
+    return numFns ? fns[0] : id;
   }
   var firstFn = fns[numFns - 1];
   return arity(firstFn.length, function composedFn() {
@@ -619,24 +617,84 @@ function all(fn, iterators) {
  * ---------------------
  */
 
+function id(x) {
+  return x
+}
+
 function tuple(/* ... */) {
   return selectArgs(arguments);
 }
 
 /**
- * Juxtaposition
+ * Holds the provided arguments, returning a function which, when called with
+ * another function, will return the results of being supplied with the
+ * original arguments. Example:
+ *
+ *     hold(1, 2, 3)(add)  // 6
+ *
+ */
+function hold() {
+  var args = arguments;
+  return function(fn) {
+    return fn.apply(null, args);
+  }
+}
+
+/**
+ * Takes a set of functions and returns a function which represents their
+ * juxtaposition. When called, the juxtaposed function will return the result
+ * of the arguments applied to each function as an array.
+ *
+ *     var example = knit(add(1), sub(1))
+ *     example(10)  // [11, 9]
+ *
+ * `juxt` can be useful in conjunction with `map` for converting an array into
+ * an object.
+ *
+ *     map(juxt(get('uid'), id), [ { uid: 'abc' }, { uid: 'xyz' } ])
+ *     // { abc: { uid: 'abc' }, xyz: { uid: 'xyz' } }
+ *
  */
 function juxt(/* ... */) {
   var fns = arguments;
-  var juxtaposedArity = fns.length;
-  return arity(juxtaposedArity, function() {
-    var result = new Array(arity);
-    for (var ii = 0; ii < arity; ii++) {
-      result[ii] = fns[ii](arguments[ii]);
+  var numFns = fns.length;
+  return arity(fns[0].length, function() {
+    var result = new Array(numFns);
+    for (var ii = 0; ii < numFns; ii++) {
+      result[ii] = fns[ii].apply(null, arguments);
     }
     return result;
   });
 }
+
+/**
+ * Returns a function which when called will apply each provided argument to the
+ * corresponding function provided to knit. Example:
+ *
+ *     var example = knit(add(1), sub(1))
+ *     example([10, 20])  // [11, 19]
+ *
+ * `knit` can be useful when mapping over key-value pairs such as objects.
+ * .
+ *
+ *    map(knit(id, neg), { a: 1, b: 2, c: 3 }) // { a: -1, b: -2, c: -3 }
+ *
+ * Equivalent to:
+ *
+ *     compose(partial(compose, array), partial(partial, map, call), tuple)
+ *
+ */
+function knit(/* ... */) {
+  var fns = arguments;
+  return function(tuple) {
+    var result = new Array(fns.length);
+    for (var ii = 0; ii < fns.length; ii++) {
+      result[ii] = fns[ii](tuple[ii]);
+    }
+    return result;
+  };
+}
+
 
 /**
  * Reduce Args
@@ -722,6 +780,9 @@ var min = curry(reduceArgs(function (x, y) {
   return x < y ? x : y;
 }), 2);
 
+function neg(x) {
+  return -x;
+}
 
 
 
@@ -756,10 +817,6 @@ var gteq = curryRight(compareArgs(function (x, y) {
 /**
  * Internal helper methods
  */
-
-function identity(x) {
-  return x
-}
 
 function add2(x, y) {
   return x + y;
@@ -830,14 +887,15 @@ module.exports = loda = {
   'every': curry(every, 2),
   'some': curry(some, 2),
 
+  'id': id,
   'tuple': tuple,
+  'hold': hold,
   'juxt': juxt,
+  'knit': knit,
   'reduceArgs': reduceArgs,
   'compareArgs': compareArgs,
 
-  'get': get,
-  'set': set,
-  'append': append,
+  'get': curry(get),
 
   'add': add,
   'sub': sub,
@@ -847,6 +905,7 @@ module.exports = loda = {
   'pow': pow,
   'max': max,
   'min': min,
+  'neg': neg,
 
   'eq': eq,
   'lt': lt,
