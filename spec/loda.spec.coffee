@@ -84,9 +84,6 @@ describe 'loda', ->
 
   describe 'Iterables', ->
 
-    describe 'iterable', ->
-
-
     describe 'iterator', ->
 
       it 'is idempotent', ->

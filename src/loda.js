@@ -262,15 +262,12 @@ function clearMemo(memoized) {
 
 
 // TODO add support for mori-ish things.
-function iterable(maybeIterable) {
+function castIterable(maybeIterable) {
   if (!maybeIterable) {
     return EMPTY_ITERABLE;
   }
   if (maybeIterable[ITERATOR_SYMBOL]) {
     return maybeIterable;
-  }
-  if (typeof maybeIterable.next === 'function') {
-    return new LodaIterable(function() { return maybeIterable });
   }
   if (typeof maybeIterable === 'function') {
     return new LodaIterable(maybeIterable);
@@ -287,7 +284,7 @@ function iterable(maybeIterable) {
 function iterator(maybeIterable) {
   return typeof maybeIterable.next === 'function' ?
     maybeIterable :
-    iterable(maybeIterable)[ITERATOR_SYMBOL]();
+    castIterable(maybeIterable)[ITERATOR_SYMBOL]();
 }
 
 // Internal iterator helpers
@@ -731,7 +728,6 @@ var loda = {
   'isMemoized': isMemoized,
   'clearMemo': clearMemo,
 
-  'iterable': iterable,
   'iterator': iterator,
 
   'array': array,
