@@ -361,6 +361,15 @@ var string = partial(reduce, add2, '');
 /**
  * Much like Array's `forEach` or underscore's `each`, however the `sideEffect`
  * is optional.
+ *
+ * If you're using ES6 and are using an anonymous function, prefer the native
+ * for-of loop instead. These two uses are equivalent, but the latter is
+ * idiomatic ES6 JavaScript.
+ *
+ *    var mapped = map(add(1), [1,2,3])
+ *    doall(mapped, x => console.log(x))
+ *    for (x of mapped) console.log(x)
+ *
  */
 function doall(iterable, sideEffect) {
   var iter = iterator(iterable);
