@@ -644,7 +644,7 @@ var sub = curryRight(reduceArgs(function (x, y) {
   return x - y
 }), 2);
 
-var mul = curryRight(reduceArgs(function (x, y) {
+var mul = curry(reduceArgs(function (x, y) {
   return x * y
 }), 2);
 
