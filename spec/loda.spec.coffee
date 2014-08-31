@@ -129,11 +129,59 @@ describe 'loda', ->
         rComposed = composeRight sub3, mul2, add5
         expect(rComposed 10).toBe add5 mul2 sub3 10
 
+      it 'returns a function with arity of the last fn', ->
+        mul2 = mul 2
+        sub3 = sub 3
+        composed = compose sub3, mul2, add
+        expect(composed.length).toBe add.length
+        rComposed = composeRight add, mul2, sub3
+        expect(rComposed.length).toBe add.length
+
 
     describe 'partial', ->
 
+      it 'partially applies arguments', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        withAB = partial fn, 'A', 'B'
+        expect(withAB 'C').toBe 'A-B-C'
 
-    describe 'partialLeft', ->
+      it 'partially applies arguments from the right', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        withAB = partialRight fn, 'A', 'B'
+        expect(withAB 'C').toBe 'C-A-B'
+
+      it 'returns fn if no arguments are provided', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        withNothing = partial fn
+        rWithNothing = partialRight fn
+        expect(withNothing).toBe fn
+        expect(rWithNothing).toBe fn
+
+      it 'may partially apply more arguments than the fn arity', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        withABCD = partial fn, 'A', 'B', 'C', 'D'
+        rWithABCD = partialRight fn, 'A', 'B', 'C', 'D'
+        expect(withABCD()).toBe 'A-B-C'
+        expect(rWithABCD()).toBe 'A-B-C'
+
+      it 'returns a function with arity of the remaining args', ->
+        fn = (a, b, c) -> [a, b, c].join('-')
+        withA = partial fn, 'A'
+        withAB = partial fn, 'A', 'B'
+        withABC = partial fn, 'A', 'B', 'C'
+        withABCD = partial fn, 'A', 'B', 'C', 'D'
+        expect(withA.length).toBe 2
+        expect(withAB.length).toBe 1
+        expect(withABC.length).toBe 0
+        expect(withABCD.length).toBe 0
+        rWithA = partial fn, 'A'
+        rWithAB = partial fn, 'A', 'B'
+        rWithABC = partial fn, 'A', 'B', 'C'
+        rWithABCD = partial fn, 'A', 'B', 'C', 'D'
+        expect(rWithA.length).toBe 2
+        expect(rWithAB.length).toBe 1
+        expect(rWithABC.length).toBe 0
+        expect(rWithABCD.length).toBe 0
 
 
     describe 'bound', ->

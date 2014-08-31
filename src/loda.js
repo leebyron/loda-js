@@ -199,7 +199,7 @@ function partial(fn) {
   });
 }
 
-function partialLeft(fn) {
+function partialRight(fn) {
   if (arguments.length === 1) return fn;
   var partialArgs = selectArgs(arguments, 1);
   return arity(fn.length - partialArgs.length, function partialFn() {
@@ -747,7 +747,7 @@ var loda = {
   'compose': compose,
   'composeRight': composeRight,
   'partial': partial,
-  'partialLeft': partialLeft,
+  'partialRight': partialRight,
   'bound': bound,
   'boundLeft': boundLeft,
   'complement': complement,
