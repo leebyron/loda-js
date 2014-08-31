@@ -49,7 +49,7 @@ module.exports = function(grunt) {
           pure_getters: true,
           unsafe: true
         },
-        reserved: ['exports', 'module', 'define', 'loda']
+        reserved: ['module', 'define', 'loda']
       }
     },
     jasmine_node: {

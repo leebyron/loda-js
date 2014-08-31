@@ -1,6 +1,7 @@
-/* global exports, module, define, loda: true */
+/* global module, define, loda: true */
 
-function defineModule(module) {
+function universalModule(module) { module = module || {}
+
   /* global Symbol */
 
 /**
@@ -827,17 +828,11 @@ var loda = {
 }
 
 module.exports = loda;
-;
-}
 
-function getModule() {
-  var module = {};
-  defineModule(module);
+
   return module.exports;
 }
 
-'object' === typeof exports ?
-  defineModule(module) :
-  'function' === typeof define && define.amd ?
-    define(getModule) :
-    loda = getModule();
+typeof module === 'object' ? universalModule(module) :
+  typeof define === 'function' && define.amd ? define(universalModule) :
+    loda = universalModule();

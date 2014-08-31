@@ -1,17 +1,12 @@
-/* global exports, module, define, loda: true */
+/* global module, define, loda: true */
 
-function defineModule(module) {
-  "%MODULE%";
-}
+function universalModule(module) { module = module || {}
 
-function getModule() {
-  var module = {};
-  defineModule(module);
+  "%MODULE%"
+
   return module.exports;
 }
 
-'object' === typeof exports ?
-  defineModule(module) :
-  'function' === typeof define && define.amd ?
-    define(getModule) :
-    loda = getModule();
+typeof module === 'object' ? universalModule(module) :
+  typeof define === 'function' && define.amd ? define(universalModule) :
+    loda = universalModule();
