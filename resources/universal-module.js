@@ -1,12 +1,9 @@
-/* global module, define, loda: true */
+/* global module, define, LIBNAME: true */
 
 function universalModule(module) { module = module || {}
-
-  "%MODULE%"
-
-  return module.exports;
-}
+  "MODULE"
+return module.exports; }
 
 typeof module === 'object' ? universalModule(module) :
   typeof define === 'function' && define.amd ? define(universalModule) :
-    loda = universalModule();
+    LIBNAME = universalModule();

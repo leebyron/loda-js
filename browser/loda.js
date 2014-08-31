@@ -1,12 +1,14 @@
 /* global module, define, loda: true */
 
 function universalModule(module) { module = module || {}
-
-  /* global Symbol */
+  
+/* global Symbol */
 
 /**
  * Use JavaScript functionally, you must!
  */
+
+var loda;
 
 function install(global) {
   for (var x in loda) {
@@ -761,11 +763,10 @@ function selectArgs(argsObj, skip, mapper) {
 
 
 
-
 /**
  * Export public API
  */
-var loda = {
+module.exports = loda = {
   'install': install,
 
   'arity': arity,
@@ -827,11 +828,7 @@ var loda = {
   'gteq': gteq,
 }
 
-module.exports = loda;
-
-
-  return module.exports;
-}
+return module.exports; }
 
 typeof module === 'object' ? universalModule(module) :
   typeof define === 'function' && define.amd ? define(universalModule) :

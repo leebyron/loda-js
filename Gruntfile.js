@@ -33,6 +33,7 @@ module.exports = function(grunt) {
     },
     build: {
       all: {
+        libName: 'loda',
         src: 'src/loda.js',
         wrapper: './resources/universal-module.js',
         dest: 'browser/',
@@ -71,7 +72,9 @@ module.exports = function(grunt) {
     var data = grunt.file.read(this.data.src);
     var wrapper = grunt.file.read(this.data.wrapper);
     process.chdir(this.data.dest);
-    var wrapped = wrapper.replace('"%MODULE%"', data);
+    var wrapped = wrapper
+      .replace(/LIBNAME/g, this.data.libName)
+      .replace('"MODULE"', '\n' + data);
     grunt.file.write(this.data.raw, wrapped);
     var result;
     try {

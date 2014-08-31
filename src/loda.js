@@ -4,6 +4,8 @@
  * Use JavaScript functionally, you must!
  */
 
+var loda;
+
 function install(global) {
   for (var x in loda) {
     if (loda[x] !== install) {
@@ -757,11 +759,10 @@ function selectArgs(argsObj, skip, mapper) {
 
 
 
-
 /**
  * Export public API
  */
-var loda = {
+module.exports = loda = {
   'install': install,
 
   'arity': arity,
@@ -822,5 +823,3 @@ var loda = {
   'gt': gt,
   'gteq': gteq,
 }
-
-module.exports = loda;
