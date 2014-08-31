@@ -46,9 +46,8 @@ module.exports = function(grunt) {
           toplevel: true
         },
         compress: {
-          comparisons: true,
           pure_getters: true,
-          unsafe: true
+          unsafe: true,
         },
         reserved: ['module', 'define', 'loda']
       }
