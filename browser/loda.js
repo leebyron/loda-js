@@ -1,4 +1,4 @@
-/* global exports, module, define, loda */
+/* global exports, module, define, loda: true */
 
 function defineModule(module) {
   /* global Symbol */
@@ -840,4 +840,4 @@ function getModule() {
   defineModule(module) :
   'function' === typeof define && define.amd ?
     define(getModule) :
-    loda = getModule(); /* jshint ignore: line */
+    loda = getModule();
