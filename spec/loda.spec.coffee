@@ -316,6 +316,10 @@ describe 'loda', ->
         expect(i.next().value).toBe 3
         expect(i.next().value).toBe undefined
 
+      it 'iterates an empty array', ->
+        i = iterator []
+        expect(i.next().value).toBe undefined
+
       it 'iterates over string', ->
         i = iterator 'ABC'
         expect(i.next().value).toBe 'A'
@@ -346,36 +350,32 @@ describe 'loda', ->
     describe 'reify', ->
 
       it 'can produce an array', ->
-        mapSq = map (x) -> x * x
-        m = mapSq [1,2,3]
-        a = array m
-        expect(a).toEqual [1,4,9]
+        i = iterator 'ABC'
+        a = array i
+        expect(a).toEqual [ 'A', 'B', 'C' ]
 
       it 'can produce an object', ->
-        mapUpperSq = map ([k, v]) -> [k.toUpperCase(), v * v]
-        m = mapUpperSq { a: 1, b: 2, c: 3 }
-        o = object m
-        expect(o).toEqual { A: 1, B: 4, C: 9 }
+        i = iterator [ [ 'a', 1 ], [ 'b', 2 ], [ 'c', 3 ] ]
+        o = object i
+        expect(o).toEqual { a: 1, b: 2, c: 3 }
 
       it 'can produce a string', ->
-        mapSq = map (x) -> x * x
-        m = mapSq [1,2,3]
-        s = string m
-        expect(s).toEqual '149'
+        i = iterator [ 1, 2, 3 ]
+        s = string i
+        expect(s).toEqual '123'
 
       it 'can produce side effects', ->
         sideEffect = jasmine.createSpy()
-        mapSq = map (x) -> x * x
-        m = mapSq [1,2,3]
-        doall m, sideEffect
+        i = iterator [ 1, 2, 3 ]
+        doall i, sideEffect
         expect(sideEffect).toHaveBeenCalledWith 1
-        expect(sideEffect).toHaveBeenCalledWith 4
-        expect(sideEffect).toHaveBeenCalledWith 9
+        expect(sideEffect).toHaveBeenCalledWith 2
+        expect(sideEffect).toHaveBeenCalledWith 3
 
       it 'can force side effects', ->
         sideEffect = jasmine.createSpy()
         mapSqWithSideEffect = map (x) -> sideEffect x; x * x
-        m = mapSqWithSideEffect [1,2,3]
+        m = mapSqWithSideEffect [ 1, 2, 3 ]
         expect(sideEffect).not.toHaveBeenCalled
         doall m
         expect(sideEffect).toHaveBeenCalledWith 1
@@ -467,6 +467,13 @@ describe 'loda', ->
           [ 100, 200, 300, 400, 500 ]
         expect(array mapped).toEqual [ 111, 222, 333, 444, 555 ]
 
+      it 'result is length of shortest input', ->
+        mapped = map add,
+          [ 1, 2, 3, 4, 5 ],
+          [ 10, 20, 30, 40 ],
+          [ 100, 200, 300 ]
+        expect(array mapped).toEqual [ 111, 222, 333 ]
+
       it 'maps objects as key-value tuples', ->
         mapUpperDouble = map ([ k, v ]) -> [ k.toUpperCase(), mul(2, v) ]
         expect(
@@ -476,14 +483,57 @@ describe 'loda', ->
 
     describe 'zip', ->
 
+      it 'combines multiple iterables, yielding a tuple for each', ->
+        zipped = zip [ 'a', 'b', 'c' ], [ 1, 2, 3 ]
+        expect(zipped.length).toBe undefined
+        expect(array zipped).toEqual [ [ 'a', 1 ], [ 'b', 2 ], [ 'c', 3 ] ]
+
+      it 'helps creating an object from a key and a value iterable', ->
+        expect(
+          object zip [ 'a', 'b', 'c' ], [ 1, 2, 3 ]
+        ).toEqual { a: 1, b: 2, c: 3 }
+
+      it 'can help flip dimensional arrays', ->
+        matrix = [
+          [ 1, 2, 3 ],
+          [ 4, 5, 6 ],
+          [ 7, 8, 9 ]
+        ]
+        flippedMatrix = array apply zip, matrix
+        expect(flippedMatrix).toEqual [
+          [ 1, 4, 7 ],
+          [ 2, 5, 8 ],
+          [ 3, 6, 9 ]
+        ]
+
 
     describe 'reduce', ->
 
+      it 'uses a reducer to reduce an iterable to a single value', ->
+        reduced = reduce add, [ 1, 2, 3, 4, 5 ]
+        expect(reduced).toBe 15
 
-    describe 'reduced', ->
+      it 'can be curried', ->
+        sum = reduce add
+        expect(sum [ 1, 2, 3, 4, 5 ]).toEqual 15
 
 
     describe 'compare', ->
+
+      it 'uses a comparator to compare all pairs in an iterable', ->
+        expect(compare lteq, [ 1, 1, 3, 4, 4 ]).toBe true
+        expect(compare lt, [ 1, 1, 3, 4, 4 ]).toBe false
+
+      it 'can be curried', ->
+        isAscending = compare lteq
+        expect(isAscending [ 1, 1, 3, 4, 4 ]).toEqual true
+        expect(isAscending [ 1, 2, 3, 2, 1 ]).toEqual false
+
+      it 'short-circuits on false', ->
+        lteqSpy = jasmine.createSpy().andCallFake(lteq)
+        isAscending = compare lteqSpy
+        expect(isAscending [ 1, 2, 3, 2, 1 ]).toEqual false
+        expect(lteqSpy.calls.length).toBe 3
 
 
   describe 'Argument Computations', ->

@@ -306,12 +306,16 @@ function clearMemo(memoized) {
 
 
 /**
- * Iterators
- * ---------
+ * Iteratable
+ * ----------
  */
 
+function iterator(maybeIterable) {
+  return !maybeIterable || typeof maybeIterable.next === 'function' ?
+    maybeIterable :
+    castIterable(maybeIterable)[ITERATOR_SYMBOL]();
+}
 
-// TODO add support for mori-ish things.
 function castIterable(maybeIterable) {
   if (!maybeIterable) {
     return EMPTY_ITERABLE;
@@ -329,12 +333,6 @@ function castIterable(maybeIterable) {
     return indexedIterable(maybeIterable);
   }
   return keyedIterable(maybeIterable);
-}
-
-function iterator(maybeIterable) {
-  return typeof maybeIterable.next === 'function' ?
-    maybeIterable :
-    castIterable(maybeIterable)[ITERATOR_SYMBOL]();
 }
 
 // Internal iterator helpers
@@ -390,9 +388,11 @@ function keyedIterable(keyed) {
   });
 }
 
-var EMPTY_ITERABLE = new LodaIterable();
-EMPTY_ITERABLE[ITERATOR_SYMBOL] = new LodaIterator();
-EMPTY_ITERABLE[ITERATOR_SYMBOL].next = function () {
+var EMPTY_ITERABLE = new LodaIterable(function() {
+  return EMPTY_ITERATOR;
+});
+var EMPTY_ITERATOR = new LodaIterator();
+EMPTY_ITERATOR.next = function () {
   return ITERATOR_DONE;
 }
 
@@ -541,7 +541,7 @@ var zip = partial(map, tuple);
  */
 function reduce(fn, iterable) {
   var reduced = arguments[2];
-  var iter, step;
+  var iter;
   if (reduced) {
     iter = iterator(reduced);
     reduced = iterable;
@@ -550,7 +550,7 @@ function reduce(fn, iterable) {
     reduced = iter.next().value;
   }
   while (true) {
-    step = iter.next();
+    var step = iter.next();
     if (step.done) return reduced;
     reduced = fn(reduced, step.value);
     if (reduced === REDUCED) return REDUCED.value;
@@ -572,7 +572,7 @@ var REDUCED = { value : undefined };
  */
 function compare(fn, iterable) {
   var left = arguments[2];
-  var iter, step;
+  var iter;
   if (left) {
     iter = iterator(left);
     left = iterable;
@@ -581,7 +581,7 @@ function compare(fn, iterable) {
     left = iter.next().value;
   }
   while (true) {
-    step = iter.next();
+    var step = iter.next();
     if (step.done) return true;
     if (!fn(left, step.value)) return false;
     left = step.value;
