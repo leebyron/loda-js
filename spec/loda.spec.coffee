@@ -38,8 +38,27 @@ describe 'loda', ->
 
     describe 'call', ->
 
+      it 'uses the last argument as this', ->
+        thisArg = {}
+        spy = jasmine.createSpy()
+        call(spy, 1, 2, 3, thisArg)
+        expect(spy).toHaveBeenCalledWith 1, 2, 3
+        expect(spy.mostRecentCall.object).toBe thisArg
+
 
     describe 'apply', ->
+
+      it 'calls a function with an array of arguments', ->
+        spy = jasmine.createSpy()
+        apply(spy, [1, 2, 3])
+        expect(spy).toHaveBeenCalledWith 1, 2, 3
+
+      it 'can apply with a thisArg', ->
+        thisArg = {}
+        spy = jasmine.createSpy()
+        apply(spy, [1, 2, 3], thisArg)
+        expect(spy).toHaveBeenCalledWith 1, 2, 3
+        expect(spy.mostRecentCall.object).toBe thisArg
 
 
     describe 'curry', ->
