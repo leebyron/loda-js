@@ -4,7 +4,7 @@ var uglify = require('uglify-js');
 module.exports = function(grunt) {
   grunt.initConfig({
     jshint: {
-      all: ['loda.js', 'resources/*.js'],
+      all: ['src/*.js', 'resources/*.js'],
       options: {
         asi: true,
         curly: false,
