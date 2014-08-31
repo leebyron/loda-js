@@ -210,10 +210,22 @@ function partialRight(fn) {
 
 
 /**
- * Bound
+ * Unbinding
  */
 
-function bound(fn) {
+/**
+ * `functionize` returns a new function with an additional argument which will
+ * be provided to the original fn as `this`. This is particularly useful for
+ * wrapping prototype methods of built-ins. Example:
+ *
+ *     var slice = functionize(Array.prototype.slice);
+ *     slice(2, [ 1, 2, 3, 4 ])      // [ 3, 4 ]
+ *     slice(1, -1, [ 1, 2, 3, 4 ])  // [ 2, 3 ]
+ *
+ * This is similar to `partial(call, myFn)`, but will return a function with an
+ * arity based on the provided function.
+ */
+function functionize(fn) {
   return arity(fn.length + 1, function () {
     // TODO: jsperf this.
     var thisArg = Array.prototype.pop.call(arguments);
@@ -221,12 +233,17 @@ function bound(fn) {
   });
 }
 
-function boundLeft(fn) {
-  return arity(fn.length + 1, function () {
-    var thisArg = Array.prototype.shift.call(arguments);
-    return fn.apply(thisArg, arguments);
+/**
+ * The opposite of `functionize`, `methodize` will provide the `this` context
+ * it is called with as the last argument to the original function.
+ */
+function methodize(fn) {
+  return arity(fn.length - 1, function () {
+    Array.prototype.push.call(arguments, this);
+    return fn.apply(null, arguments);
   });
 }
+
 
 
 /**
@@ -757,8 +774,8 @@ var loda = {
   'composeRight': composeRight,
   'partial': partial,
   'partialRight': partialRight,
-  'bound': bound,
-  'boundLeft': boundLeft,
+  'functionize': functionize,
+  'methodize': methodize,
   'complement': complement,
 
   'memo': memo,

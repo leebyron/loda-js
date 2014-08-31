@@ -184,10 +184,27 @@ describe 'loda', ->
         expect(rWithABCD.length).toBe 0
 
 
-    describe 'bound', ->
+    describe 'unbinding', ->
 
+      it 'can functionize a method', ->
+        slice = `functionize(Array.prototype.slice)`
+        expect(slice [ 1, 2, 3, 4 ]).toEqual [ 1, 2, 3, 4 ]
+        expect(slice 2, [ 1, 2, 3, 4 ]).toEqual [ 3, 4 ]
+        expect(slice 1, -1, [ 1, 2, 3, 4 ]).toEqual [ 2, 3 ]
 
-    describe 'boundLeft', ->
+      it 'can methodize a function', ->
+        tandemBike = { type: 'Tandem' }
+        getBikeType = (bike) -> bike.type
+        expect(getBikeType tandemBike).toBe 'Tandem'
+        tandemBike.getType = methodize getBikeType
+        expect(tandemBike.getType()).toBe 'Tandem'
+
+      it 'returns a function of the correct arity', ->
+        original = Array.prototype.slice
+        func_ed = `functionize(original)`
+        meth_ed = methodize func_ed
+        expect(func_ed.length).toBe original.length + 1
+        expect(meth_ed.length).toBe func_ed.length - 1
 
 
     describe 'complement', ->

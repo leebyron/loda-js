@@ -27,6 +27,9 @@ module.exports = function(grunt) {
     },
     coffeelint: {
       all: ['spec/*.coffee'],
+      options: {
+        no_backticks: {'level': 'ignore'},
+      }
     },
     build: {
       all: {
