@@ -385,7 +385,38 @@ describe 'loda', ->
 
   describe 'Iterable Computations', ->
 
+    describe 'isEmpty', ->
+
+      it 'is true for falsey values', ->
+        expect(isEmpty 0).toBe true
+        expect(isEmpty false).toBe true
+        expect(isEmpty null).toBe true
+        expect(isEmpty undefined).toBe true
+
+
+    describe 'filter', ->
+
+
+    describe 'map', ->
+
+
+    describe 'zip', ->
+
+
+    describe 'count', ->
+
+
+    describe 'reduce', ->
+
+
+    describe 'reduced', ->
+
+
+    describe 'compare', ->
+
+
   describe 'Argument Computations', ->
+
 
   describe 'Array Helpers', ->
 
