@@ -221,7 +221,6 @@ describe 'loda', ->
         expect(isOdd 222).toBe false
 
 
-
   describe 'Memoization', ->
 
     it 'returns a function of the same arity', ->
@@ -660,10 +659,23 @@ describe 'loda', ->
         ).toEqual { a: -1, b: -2, c: -3 }
 
 
-  describe 'Array Helpers', ->
+  describe 'Indexed', ->
+
+    it 'gets an index from an array', ->
+      expect(get 1, [ 'A', 'B', 'C' ]).toBe 'B'
+
+    it 'gets a char from a string', ->
+      expect(get 1, 'ABC').toBe 'B'
+
+    it 'gets a key from an object', ->
+      expect(get 'b', { a: 0, b: 1, c: 2 }).toBe 1
+
+    it 'is curried', ->
+      first = get 0
+      expect(first 'ABC').toBe 'A'
 
 
-  describe 'Math', ->
+  describe 'Maths', ->
 
     it 'has curried methods', ->
       expect(add(2)(3)).toEqual 5

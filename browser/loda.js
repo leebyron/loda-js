@@ -421,13 +421,40 @@ function iteratorValue(value) {
  *
  */
 function array(iterable) {
-  return reduce(append, [], iterable);
+  return reduce(pushIn, [], iterable);
 }
 
+// Interal
+function pushIn(array, val) {
+  return array.push(val), array;
+}
+
+/**
+ * Creates a JavaScript Object from a [ k, v ] tuple iterable.
+ *
+ * Example:
+ *
+ *     object([ [ 'a', 1 ], [ 'b', 2 ] ])  // { a: 1, b: 2 }
+ *
+ */
 function object(iterable) {
-  return reduce(set, {}, iterable);
+  return reduce(setIn, {}, iterable);
 }
 
+// Interal
+function setIn(indexed, kvTuple) {
+  return (indexed[kvTuple[0]] = kvTuple[1]), indexed;
+}
+
+/**
+ * Creates a string from an iterable by concatenating all yielded values
+ * together.
+ *
+ * Example:
+ *
+ *     string([ 1, 2, 3 ])  // '123'
+ *
+ */
 var string = partial(reduce, add2, '');
 
 /**
@@ -621,10 +648,16 @@ function all(fn, iterators) {
  * ---------------------
  */
 
+/**
+ * The identity function returns the first argument provided.
+ */
 function id(x) {
   return x
 }
 
+/**
+ * Returns an Array of all arguments provided.
+ */
 function tuple(/* ... */) {
   return selectArgs(arguments);
 }
@@ -700,52 +733,15 @@ function knit(/* ... */) {
 }
 
 
-/**
- * Reduce Args
- */
-var reduceArgs = curry(function (fn /* ... */) {
-  var reduced = arguments[1];
-  var numArgs = arguments.length;
-  var ii = 1;
-  while (++ii < numArgs) {
-    reduced = fn(reduced, arguments[ii]);
-    if (reduced === REDUCED) return REDUCED.value;
-  }
-  return reduced;
-}, 2);
-
-var compareArgs = curry(function (fn /* ... */) {
-  var left = arguments[1];
-  var numArgs = arguments.length;
-  var ii = 1;
-  while (++ii < numArgs) {
-    var right = arguments[ii];
-    if (!fn(left, right)) return false;
-    left = right;
-  }
-  return true;
-}, 2);
-
-
-
 
 /**
- * Array Helpers
- * -------------
+ * Indexed
+ * -------
  */
 
 function get(key, indexed) {
   return indexed[key];
 }
-
-function set(indexed, kvTuple) {
-  return (indexed[kvTuple[0]] = kvTuple[1]), indexed;
-}
-
-function append(array, val) {
-  return array.push(val), array;
-}
-
 
 
 
@@ -754,33 +750,33 @@ function append(array, val) {
  * -----
  */
 
-var add = curry(reduceArgs(add2), 2);
+var add = curry(argReducer(add2), 2);
 
-var sub = curryRight(reduceArgs(function (x, y) {
+var sub = curryRight(argReducer(function (x, y) {
   return x - y
 }), 2);
 
-var mul = curry(reduceArgs(function (x, y) {
+var mul = curry(argReducer(function (x, y) {
   return x * y
 }), 2);
 
-var div = curryRight(reduceArgs(function (x, y) {
+var div = curryRight(argReducer(function (x, y) {
   return x / y
 }), 2);
 
-var mod = curryRight(reduceArgs(function (x, y) {
+var mod = curryRight(argReducer(function (x, y) {
   return x % y
 }), 2);
 
-var pow = curryRight(reduceArgs(function (x, y) {
+var pow = curryRight(argReducer(function (x, y) {
   return Math.pow(x, y)
 }), 2);
 
-var max = curry(reduceArgs(function (x, y) {
+var max = curry(argReducer(function (x, y) {
   return x > y ? x : y;
 }), 2);
 
-var min = curry(reduceArgs(function (x, y) {
+var min = curry(argReducer(function (x, y) {
   return x < y ? x : y;
 }), 2);
 
@@ -795,26 +791,25 @@ function neg(x) {
  * -----------
  */
 
-var eq = curry(compareArgs(function (x, y) {
+var eq = curry(argComparer(function (x, y) {
   return x && x.equals ? x.equals(y) : x === y;
 }), 2);
 
-var lt = curryRight(compareArgs(function (x, y) {
+var lt = curryRight(argComparer(function (x, y) {
   return x < y;
 }), 2);
 
-var lteq = curryRight(compareArgs(function (x, y) {
+var lteq = curryRight(argComparer(function (x, y) {
   return x <= y;
 }), 2);
 
-var gt = curryRight(compareArgs(function (x, y) {
+var gt = curryRight(argComparer(function (x, y) {
   return x > y;
 }), 2);
 
-var gteq = curryRight(compareArgs(function (x, y) {
+var gteq = curryRight(argComparer(function (x, y) {
   return x >= y;
 }), 2);
-
 
 
 
@@ -845,6 +840,28 @@ function selectArgs(argsObj, skip, mapper) {
     mapped[ii - skip] = mapper ? mapper(argsObj[ii]) : argsObj[ii];
   }
   return mapped;
+}
+
+function argReducer(fn) {
+  return function() {
+    var reduced = arguments[0];
+    for (var ii = 1; ii < arguments.length; ii++) {
+      reduced = fn(reduced, arguments[ii]);
+    }
+    return reduced;
+  }
+}
+
+function argComparer(fn) {
+  return function() {
+    var left = arguments[0];
+    for (var ii = 1; ii < arguments.length; ii++) {
+      var right = arguments[ii];
+      if (!fn(left, right)) return false;
+      left = right;
+    }
+    return true;
+  }
 }
 
 
@@ -896,8 +913,6 @@ module.exports = loda = {
   'hold': hold,
   'juxt': juxt,
   'knit': knit,
-  'reduceArgs': reduceArgs,
-  'compareArgs': compareArgs,
 
   'get': curry(get),
 
