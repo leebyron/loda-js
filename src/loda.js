@@ -256,6 +256,75 @@ function complement(fn) {
   });
 }
 
+/**
+ * Returns the same function with the arguments in the reverse order
+ *
+ *     function ab(a, b) { return a + ' ' + b }
+ *     ba = flip(AB)
+ *     ba('hello', 'you')  // 'you hello'
+ *
+ */
+function flip(fn) {
+  // TODO: should flip the curried function if curried.
+  return arity(fn.length, function flippedFn() {
+    return fn.apply(this, Array.prototype.reverse.apply(arguments));
+  });
+}
+
+/**
+ * Takes a set of functions and returns a function which represents their
+ * juxtaposition. When called, the juxtaposed function will return the result
+ * of the arguments applied to each function as an array.
+ *
+ *     var example = knit(add(1), sub(1))
+ *     example(10)  // [11, 9]
+ *
+ * `juxt` can be useful in conjunction with `map` for converting an array into
+ * an object.
+ *
+ *     map(juxt(get('uid'), id), [ { uid: 'abc' }, { uid: 'xyz' } ])
+ *     // { abc: { uid: 'abc' }, xyz: { uid: 'xyz' } }
+ *
+ */
+function juxt(/* ... */) {
+  var fns = arguments;
+  var numFns = fns.length;
+  return arity(fns[0].length, function() {
+    var result = new Array(numFns);
+    for (var ii = 0; ii < numFns; ii++) {
+      result[ii] = fns[ii].apply(null, arguments);
+    }
+    return result;
+  });
+}
+
+/**
+ * Returns a function which when called will apply each provided argument to the
+ * corresponding function provided to knit. Example:
+ *
+ *     var example = knit(add(1), sub(1))
+ *     example([10, 20])  // [11, 19]
+ *
+ * `knit` can be useful when mapping over key-value pairs such as objects.
+ * .
+ *
+ *    map(knit(id, neg), { a: 1, b: 2, c: 3 }) // { a: -1, b: -2, c: -3 }
+ *
+ * Equivalent to:
+ *
+ *     compose(partial(compose, array), partial(partial, map, call), tuple)
+ *
+ */
+function knit(/* ... */) {
+  var fns = arguments;
+  return function(tuple) {
+    var result = new Array(fns.length);
+    for (var ii = 0; ii < fns.length; ii++) {
+      result[ii] = fns[ii](tuple[ii]);
+    }
+    return result;
+  };
+}
 
 
 
@@ -673,61 +742,6 @@ function hold() {
   }
 }
 
-/**
- * Takes a set of functions and returns a function which represents their
- * juxtaposition. When called, the juxtaposed function will return the result
- * of the arguments applied to each function as an array.
- *
- *     var example = knit(add(1), sub(1))
- *     example(10)  // [11, 9]
- *
- * `juxt` can be useful in conjunction with `map` for converting an array into
- * an object.
- *
- *     map(juxt(get('uid'), id), [ { uid: 'abc' }, { uid: 'xyz' } ])
- *     // { abc: { uid: 'abc' }, xyz: { uid: 'xyz' } }
- *
- */
-function juxt(/* ... */) {
-  var fns = arguments;
-  var numFns = fns.length;
-  return arity(fns[0].length, function() {
-    var result = new Array(numFns);
-    for (var ii = 0; ii < numFns; ii++) {
-      result[ii] = fns[ii].apply(null, arguments);
-    }
-    return result;
-  });
-}
-
-/**
- * Returns a function which when called will apply each provided argument to the
- * corresponding function provided to knit. Example:
- *
- *     var example = knit(add(1), sub(1))
- *     example([10, 20])  // [11, 19]
- *
- * `knit` can be useful when mapping over key-value pairs such as objects.
- * .
- *
- *    map(knit(id, neg), { a: 1, b: 2, c: 3 }) // { a: -1, b: -2, c: -3 }
- *
- * Equivalent to:
- *
- *     compose(partial(compose, array), partial(partial, map, call), tuple)
- *
- */
-function knit(/* ... */) {
-  var fns = arguments;
-  return function(tuple) {
-    var result = new Array(fns.length);
-    for (var ii = 0; ii < fns.length; ii++) {
-      result[ii] = fns[ii](tuple[ii]);
-    }
-    return result;
-  };
-}
-
 
 
 /**
@@ -881,6 +895,9 @@ module.exports = loda = {
   'functionize': functionize,
   'methodize': methodize,
   'complement': complement,
+  'flip': flip,
+  'juxt': juxt,
+  'knit': knit,
 
   'memo': memo,
   'isMemoized': isMemoized,
@@ -907,8 +924,6 @@ module.exports = loda = {
   'id': id,
   'tuple': tuple,
   'hold': hold,
-  'juxt': juxt,
-  'knit': knit,
 
   'get': curry(get),
 

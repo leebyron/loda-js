@@ -221,6 +221,49 @@ describe 'loda', ->
         expect(isOdd 222).toBe false
 
 
+    describe 'flip', ->
+
+      it 'creates a fn which calls the original with reversed arguments', ->
+        fn = (a, b, c) -> [a, b, c].join '-'
+        flipped = flip fn
+        expect(flipped 'A', 'B', 'C').toBe 'C-B-A'
+
+
+    describe 'juxt', ->
+
+      it 'creates a fn which applies arguments to a set of functions', ->
+        maths = juxt add(1), sub(1), mul(2)
+        expect(maths 5).toEqual [ 6, 4, 10 ]
+
+      it 'useful for mapping a list-iterable to a kv-iterable', ->
+        records = [
+          { id: 4, name: 'Mark' },
+          { id: 5, name: 'Chris' },
+          { id: 6, name: 'Dustin' }
+        ]
+        pullID = map juxt get('id'), id
+        expect(
+          object pullID records
+        ).toEqual {
+          4: { id: 4, name: 'Mark' },
+          5: { id: 5, name: 'Chris' },
+          6: { id: 6, name: 'Dustin' }
+        }
+
+
+    describe 'knit', ->
+
+      it 'creates a fn which applies a tuple to a set of functions', ->
+        incAndDec = knit add(1), add(-1)
+        expect(incAndDec [ 10, 20 ]).toEqual [ 11, 19 ]
+
+      it 'useful for describing maps of kv-iterables', ->
+        negVals = map knit id, neg
+        expect(
+          object negVals { a: 1, b: 2, c: 3 }
+        ).toEqual { a: -1, b: -2, c: -3 }
+
+
   describe 'Memoization', ->
 
     it 'returns a function of the same arity', ->
@@ -622,41 +665,6 @@ describe 'loda', ->
         hold123 = hold 1, 2, 3
         expect(hold123 add).toBe 6
         expect(hold123 sub).toBe -4
-
-
-    describe 'juxt', ->
-
-      it 'creates a fn which applies arguments to a set of functions', ->
-        maths = juxt add(1), sub(1), mul(2)
-        expect(maths 5).toEqual [ 6, 4, 10 ]
-
-      it 'useful for mapping a list-iterable to a kv-iterable', ->
-        records = [
-          { id: 4, name: 'Mark' },
-          { id: 5, name: 'Chris' },
-          { id: 6, name: 'Dustin' }
-        ]
-        pullID = map juxt get('id'), id
-        expect(
-          object pullID records
-        ).toEqual {
-          4: { id: 4, name: 'Mark' },
-          5: { id: 5, name: 'Chris' },
-          6: { id: 6, name: 'Dustin' }
-        }
-
-
-    describe 'knit', ->
-
-      it 'creates a fn which applies a tuple to a set of functions', ->
-        incAndDec = knit add(1), add(-1)
-        expect(incAndDec [ 10, 20 ]).toEqual [ 11, 19 ]
-
-      it 'useful for describing maps of kv-iterables', ->
-        negVals = map knit id, neg
-        expect(
-          object negVals { a: 1, b: 2, c: 3 }
-        ).toEqual { a: -1, b: -2, c: -3 }
 
 
   describe 'Indexed', ->
