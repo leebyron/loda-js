@@ -14,7 +14,7 @@ describe 'loda', ->
     describe 'arity (argument length)', ->
 
       it 'returns a function with a new arity', ->
-        fnOrig = (a, b, c) -> [a, b, c].join('-')
+        fnOrig = (a, b, c) -> [a, b, c].join '-'
         fn0 = arity 0, fnOrig
         fn1 = arity 1, fnOrig
         fn2 = arity 2, fnOrig
@@ -26,12 +26,12 @@ describe 'loda', ->
         expect(fn3.length).toBe 3
 
       it 'returns fn if it is already of the requested arity', ->
-        fnOrig = (a, b, c) -> [a, b, c].join('-')
+        fnOrig = (a, b, c) -> [a, b, c].join '-'
         fn3 = arity 3, fnOrig
         expect(fn3).toBe fnOrig
 
       it 'provides all arguments to the original function', ->
-        fnOrig = (a, b, c) -> [a, b, c].join('-')
+        fnOrig = (a, b, c) -> [a, b, c].join '-'
         fn1 = arity 1, fnOrig
         expect(fn1 'A', 'B', 'C').toBe 'A-B-C'
 
@@ -41,7 +41,7 @@ describe 'loda', ->
       it 'uses the last argument as this', ->
         thisArg = {}
         spy = jasmine.createSpy()
-        call(spy, 1, 2, 3, thisArg)
+        call spy, 1, 2, 3, thisArg
         expect(spy).toHaveBeenCalledWith 1, 2, 3
         expect(spy.mostRecentCall.object).toBe thisArg
 
@@ -50,13 +50,13 @@ describe 'loda', ->
 
       it 'calls a function with an array of arguments', ->
         spy = jasmine.createSpy()
-        apply(spy, [1, 2, 3])
+        apply spy, [1, 2, 3]
         expect(spy).toHaveBeenCalledWith 1, 2, 3
 
       it 'can apply with a thisArg', ->
         thisArg = {}
         spy = jasmine.createSpy()
-        apply(spy, [1, 2, 3], thisArg)
+        apply spy, [1, 2, 3], thisArg
         expect(spy).toHaveBeenCalledWith 1, 2, 3
         expect(spy.mostRecentCall.object).toBe thisArg
 
@@ -64,48 +64,48 @@ describe 'loda', ->
     describe 'curry', ->
 
       it 'returns a function of the same arity', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
-        curried = curry(fn)
-        rCurried = curryRight(fn)
+        fn = (a, b, c) -> [a, b, c].join '-'
+        curried = curry fn
+        rCurried = curryRight fn
         expect(curried.length).toBe fn.length
         expect(rCurried.length).toBe fn.length
 
       it 'returns a function of a given arity', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
-        curried = curry(fn, 2)
-        rCurried = curryRight(fn, 2)
+        fn = (a, b, c) -> [a, b, c].join '-'
+        curried = curry fn, 2
+        rCurried = curryRight fn, 2
         expect(curried.length).toBe 2
         expect(rCurried.length).toBe 2
 
       it 'curries a function from the left', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
-        curried = curry(fn)
+        fn = (a, b, c) -> [a, b, c].join '-'
+        curried = curry fn
         expect(curried('A')('B', 'C')).toBe 'A-B-C'
         expect(curried('A', 'B')('C')).toBe 'A-B-C'
         expect(curried('A')('B')('C')).toBe 'A-B-C'
 
       it 'curries a function from the right', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
-        rCurried = curryRight(fn)
+        fn = (a, b, c) -> [a, b, c].join '-'
+        rCurried = curryRight fn
         expect(rCurried('A')('B', 'C')).toBe 'B-C-A'
         expect(rCurried('A', 'B')('C')).toBe 'C-A-B'
         expect(rCurried('A')('B')('C')).toBe 'C-B-A'
 
       it 'can be re-curried', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
-        rCurried = curryRight(fn)
-        curried = curry(rCurried)
+        fn = (a, b, c) -> [a, b, c].join '-'
+        rCurried = curryRight fn
+        curried = curry rCurried
         expect(curried('A')('B')('C')).toBe 'A-B-C'
 
       it 'can be re-curried once partially applied', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
-        rCurried = curryRight(fn)
+        fn = (a, b, c) -> [a, b, c].join '-'
+        rCurried = curryRight fn
         withA = rCurried('A')
-        curried = curry(withA)
+        curried = curry withA
         expect(curried('B')('C')).toBe 'B-C-A'
 
       it 'can be detected as curried', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
+        fn = (a, b, c) -> [a, b, c].join '-'
         curried = curry(fn)
         rCurried = curryRight(fn)
         expect(isCurried fn).toBe false
@@ -141,31 +141,31 @@ describe 'loda', ->
     describe 'partial', ->
 
       it 'partially applies arguments', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
+        fn = (a, b, c) -> [a, b, c].join '-'
         withAB = partial fn, 'A', 'B'
         expect(withAB 'C').toBe 'A-B-C'
 
       it 'partially applies arguments from the right', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
+        fn = (a, b, c) -> [a, b, c].join '-'
         withAB = partialRight fn, 'A', 'B'
         expect(withAB 'C').toBe 'C-A-B'
 
       it 'returns fn if no arguments are provided', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
+        fn = (a, b, c) -> [a, b, c].join '-'
         withNothing = partial fn
         rWithNothing = partialRight fn
         expect(withNothing).toBe fn
         expect(rWithNothing).toBe fn
 
       it 'may partially apply more arguments than the fn arity', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
+        fn = (a, b, c) -> [a, b, c].join '-'
         withABCD = partial fn, 'A', 'B', 'C', 'D'
         rWithABCD = partialRight fn, 'A', 'B', 'C', 'D'
         expect(withABCD()).toBe 'A-B-C'
         expect(rWithABCD()).toBe 'A-B-C'
 
       it 'returns a function with arity of the remaining args', ->
-        fn = (a, b, c) -> [a, b, c].join('-')
+        fn = (a, b, c) -> [a, b, c].join '-'
         withA = partial fn, 'A'
         withAB = partial fn, 'A', 'B'
         withABC = partial fn, 'A', 'B', 'C'
