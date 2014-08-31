@@ -1,6 +1,6 @@
 {
   "name": "loda",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Use JavaScript functionally, you shall!",
   "homepage": "https://github.com/leebyron/loda-js",
   "author": {
@@ -24,7 +24,7 @@
     "uglify-js": "^2.4.15"
   },
   "files": [
-    "loda.js",
+    "src",
     "README.md"
   ],
   "keywords": [
