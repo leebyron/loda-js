@@ -30,12 +30,14 @@ module.exports = function(grunt) {
     },
     build: {
       all: {
+        src: 'src/loda.js',
         wrapper: './resources/universal-module.js',
-        src: 'loda.js',
-        dest: 'loda.min.js'
+        dest: 'browser/',
+        raw: 'loda.js',
+        min: 'loda.min.js',
+        map: 'loda.min.map',
       },
       options: {
-        fromString: true,
         mangle: {
           toplevel: true
         },
@@ -43,9 +45,6 @@ module.exports = function(grunt) {
           comparisons: true,
           pure_getters: true,
           unsafe: true
-        },
-        output: {
-          max_line_len: 2048,
         },
         reserved: ['module', 'define', 'loda']
       }
@@ -59,8 +58,8 @@ module.exports = function(grunt) {
     },
     size: {
       all: {
-        src: 'loda.js',
-        min: 'loda.min.js'
+        raw: 'browser/loda.js',
+        min: 'browser/loda.min.js'
       }
     }
   });
@@ -68,20 +67,27 @@ module.exports = function(grunt) {
   grunt.registerMultiTask('build', function () {
     var data = grunt.file.read(this.data.src);
     var wrapper = grunt.file.read(this.data.wrapper);
+    process.chdir(this.data.dest);
     var wrapped = wrapper.replace('"%MODULE%"', data);
-    var result = uglify.minify(wrapped, this.options());
-    grunt.file.write(this.data.dest, result.code);
+    grunt.file.write(this.data.raw, wrapped);
+    var result = uglify.minify(
+      this.data.raw,
+      this.options({outSourceMap: this.data.map})
+    );
+    grunt.file.write(this.data.min, result.code);
+    grunt.file.write(this.data.map, result.map);
+    process.chdir('../');
   });
 
   grunt.registerMultiTask('size', function () {
     var data = this.data;
     var done = this.async();
-    exec('cat '+data.src+' | wc -c', function (error, out) {
+    exec('cat '+data.raw+' | wc -c', function (error, out) {
       if (error) throw new Error(error);
       var rawBytes = parseInt(out);
-      console.log('     Concatenated: ' +
+      console.log('         Original: ' +
         (rawBytes + ' bytes').cyan);
-      exec('gzip -c '+data.src+' | wc -c', function (error, out) {
+      exec('gzip -c '+data.raw+' | wc -c', function (error, out) {
         if (error) throw new Error(error);
         var zippedBytes = parseInt(out);
         var pctOfA = Math.floor(10000 * (1 - (zippedBytes / rawBytes))) / 100;

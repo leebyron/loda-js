@@ -14,7 +14,7 @@
   "bugs": {
     "url": "https://github.com/leebyron/loda-js/issues"
   },
-  "main": "loda.js",
+  "main": "src/loda.js",
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-coffeelint": "0.0.13",
