@@ -181,8 +181,8 @@ function compose() {
   });
 }
 
-function composeLeft() {
-  return compose(Array.prototype.reverse.apply(arguments));
+function composeRight() {
+  return apply(compose, Array.prototype.reverse.call(arguments));
 }
 
 
@@ -745,7 +745,7 @@ var loda = {
   'curryRight': curryRight,
   'isCurried': isCurried,
   'compose': compose,
-  'composeLeft': composeLeft,
+  'composeRight': composeRight,
   'partial': partial,
   'partialLeft': partialLeft,
   'bound': bound,

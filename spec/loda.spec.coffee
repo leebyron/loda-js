@@ -115,8 +115,19 @@ describe 'loda', ->
 
     describe 'compose', ->
 
+      it 'composes functions', ->
+        add5 = add 5
+        mul2 = mul 2
+        sub3 = sub 3
+        composed = compose sub3, mul2, add5
+        expect(composed 10).toBe sub3 mul2 add5 10
 
-    describe 'composeLeft', ->
+      it 'composes functions from the right', ->
+        add5 = add 5
+        mul2 = mul 2
+        sub3 = sub 3
+        rComposed = composeRight sub3, mul2, add5
+        expect(rComposed 10).toBe add5 mul2 sub3 10
 
 
     describe 'partial', ->
