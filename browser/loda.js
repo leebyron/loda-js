@@ -84,13 +84,27 @@ function curry(fn, arity) {
   return arity > 1 ? getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, fn) : fn;
 }
 
+function curryRight(fn, arity) {
+  arity = arity || fn.length;
+  return arity > 1 ? getCurryRightFn(arity)(getCurryRightFn, CURRY_SYMBOL, fn) : fn;
+}
+
+function isCurried(fn) {
+  return !!fn[CURRY_SYMBOL];
+}
+
 // Internal
 
 var CURRY_SYMBOL = typeof Symbol === 'function' ? Symbol() : '@__curried__@';
 var CURRY_CACHE = [];
+var CURRY_RIGHT_CACHE = [];
 
 function getCurryFn(arity) {
   return CURRY_CACHE[arity] || (CURRY_CACHE[arity] = makeCurryFn(arity));
+}
+
+function getCurryRightFn(arity) {
+  return CURRY_RIGHT_CACHE[arity] || (CURRY_RIGHT_CACHE[arity] = makeCurryRightFn(arity));
 }
 
 function makeCurryFn(arity) {
@@ -118,8 +132,29 @@ function makeCurryFn(arity) {
   );
 }
 
-function isCurried(fn) {
-  return !!fn[CURRY_SYMBOL];
+function makeCurryRightFn(arity) {
+  var cases = '';
+  var curriedArgs = ['_0'];
+  for (var ii = 1; ii < arity; ii++) {
+    cases +=
+      '      case ' + ii + ': return getCurryFn(' + (arity - ii) + ')(getCurryFn, curriedSymbol, function() {\n'+
+      '        var args = ['+curriedArgs.join(',')+'];\n'+
+      '        for (var i = arguments.length - 1; i >= 0; i--) args.unshift(arguments[i]);\n'+
+      '        return fn.apply(this, args);\n'+
+      '      });\n';
+    curriedArgs.push('_' + ii);
+  }
+  return new Function('getCurryFn', 'curriedSymbol', 'fn', /* jshint ignore: line */
+    '  function curried('+curriedArgs.join(',')+') {\n'+
+    '    switch (arguments.length) {\n'+
+    '      case 0: return curried;\n'+
+    cases +
+    '    }\n'+
+    '    return fn.apply(this, arguments);\n'+
+    '  }\n'+
+    '  curried[curriedSymbol] = true;\n'+
+    '  return curried;'
+  );
 }
 
 
@@ -599,29 +634,25 @@ function append(array, val) {
  * -----
  */
 
-// TODO: these should all take var-args and become reductions.
-// curry(compose(partial(reduce, add), tuple), 2);
-
-
 var add = curry(reduceArgs(add2), 2);
 
-var sub = curry(reduceArgs(function (x, y) {
+var sub = curryRight(reduceArgs(function (x, y) {
   return x - y
 }), 2);
 
-var mul = curry(reduceArgs(function (x, y) {
+var mul = curryRight(reduceArgs(function (x, y) {
   return x * y
 }), 2);
 
-var div = curry(reduceArgs(function (x, y) {
+var div = curryRight(reduceArgs(function (x, y) {
   return x / y
 }), 2);
 
-var mod = curry(reduceArgs(function (x, y) {
+var mod = curryRight(reduceArgs(function (x, y) {
   return x % y
 }), 2);
 
-var pow = curry(reduceArgs(function (x, y) {
+var pow = curryRight(reduceArgs(function (x, y) {
   return Math.pow(x, y)
 }), 2);
 
@@ -645,19 +676,19 @@ var eq = curry(compareArgs(function (x, y) {
   return x && x.equals ? x.equals(y) : x === y;
 }), 2);
 
-var lt = curry(compareArgs(function (x, y) {
+var lt = curryRight(compareArgs(function (x, y) {
   return x < y;
 }), 2);
 
-var lteq = curry(compareArgs(function (x, y) {
+var lteq = curryRight(compareArgs(function (x, y) {
   return x <= y;
 }), 2);
 
-var gt = curry(compareArgs(function (x, y) {
+var gt = curryRight(compareArgs(function (x, y) {
   return x > y;
 }), 2);
 
-var gteq = curry(compareArgs(function (x, y) {
+var gteq = curryRight(compareArgs(function (x, y) {
   return x >= y;
 }), 2);
 
@@ -710,6 +741,7 @@ var loda = {
   'call': call,
   'apply': curry(apply, 2),
   'curry': curry,
+  'curryRight': curryRight,
   'isCurried': isCurried,
   'compose': compose,
   'composeLeft': composeLeft,

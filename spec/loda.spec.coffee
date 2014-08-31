@@ -68,6 +68,20 @@ describe 'loda', ->
 
     describe 'complement', ->
 
+      it 'returns the opposite of original function (casting as bool)', ->
+        mod2 = mod(2)
+        isEven = complement(mod(2))
+        isOdd = complement(isEven)
+
+        expect(mod2 111).toBe 1
+        expect(isEven 111).toBe false
+        expect(isOdd 111).toBe true
+
+        expect(mod2 222).toBe 0
+        expect(isEven 222).toBe true
+        expect(isOdd 222).toBe false
+
+
 
   describe 'Memoization', ->
 
@@ -239,11 +253,11 @@ describe 'loda', ->
 
     it 'has curried methods', ->
       expect(add(2)(3)).toEqual 5
-      expect(sub(2)(3)).toEqual -1
+      expect(sub(2)(3)).toEqual 1
       expect(mul(2)(3)).toEqual 6
-      expect(div(2)(3)).toEqual 2/3
-      expect(mod(2)(3)).toEqual 2
-      expect(pow(2)(3)).toEqual 8
+      expect(div(2)(3)).toEqual 3/2
+      expect(mod(2)(3)).toEqual 1
+      expect(pow(2)(3)).toEqual 9
       expect(max(2)(3)).toEqual 3
       expect(min(2)(3)).toEqual 2
 
@@ -306,10 +320,10 @@ describe 'loda', ->
 
     it 'has curried methods', ->
       expect(eq(1)(2)).toBe false
-      expect(lt(1)(2)).toBe true
-      expect(lteq(1)(2)).toBe true
-      expect(gt(1)(2)).toBe false
-      expect(gteq(1)(2)).toBe false
+      expect(lt(1)(2)).toBe false
+      expect(lteq(1)(2)).toBe false
+      expect(gt(1)(2)).toBe true
+      expect(gteq(1)(2)).toBe true
 
     it 'compares equality', ->
       expect(eq 1, 1).toBe true
