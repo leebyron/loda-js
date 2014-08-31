@@ -54,7 +54,7 @@ module.exports = function(grunt) {
       },
       all: ['spec/']
     },
-    stats: {
+    size: {
       all: {
         src: 'loda.js',
         min: 'loda.min.js'
@@ -70,7 +70,7 @@ module.exports = function(grunt) {
     grunt.file.write(this.data.dest, result.code);
   });
 
-  grunt.registerMultiTask('stats', function () {
+  grunt.registerMultiTask('size', function () {
     var data = this.data;
     var done = this.async();
     exec('cat '+data.src+' | wc -c', function (error, out) {
@@ -108,5 +108,7 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-jasmine-node');
-  grunt.registerTask('default', ['jshint', 'build', 'jasmine_node', 'stats']);
+  grunt.registerTask('lint', ['jshint']);
+  grunt.registerTask('test', ['jasmine_node']);
+  grunt.registerTask('default', ['lint', 'build', 'test', 'size']);
 }

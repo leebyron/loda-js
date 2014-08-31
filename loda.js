@@ -358,7 +358,11 @@ function object(iterable) {
 
 var string = partial(reduce, add2, '');
 
-function each(iterable, sideEffect) {
+/**
+ * Much like Array's `forEach` or underscore's `each`, however the `sideEffect`
+ * is optional.
+ */
+function doall(iterable, sideEffect) {
   var iter = iterator(iterable);
   while (true) {
     var step = iter.next();
@@ -708,7 +712,7 @@ var loda = {
   'array': array,
   'object': object,
   'string': string,
-  'each': each,
+  'doall': doall,
 
   'isEmpty': isEmpty,
   'filter': curry(filter, 2),

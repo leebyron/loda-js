@@ -74,6 +74,25 @@ describe 'loda', ->
         s = string m
         expect(s).toEqual '149'
 
+      it 'can produce side effects', ->
+        sideEffect = jasmine.createSpy()
+        mapSq = map (x) -> x * x
+        m = mapSq [1,2,3]
+        doall m, sideEffect
+        expect(sideEffect).toHaveBeenCalledWith 1
+        expect(sideEffect).toHaveBeenCalledWith 4
+        expect(sideEffect).toHaveBeenCalledWith 9
+
+      it 'can force side effects', ->
+        sideEffect = jasmine.createSpy()
+        mapSqWithSideEffect = map (x) -> sideEffect x; x * x
+        m = mapSqWithSideEffect [1,2,3]
+        expect(sideEffect).not.toHaveBeenCalled
+        doall m
+        expect(sideEffect).toHaveBeenCalledWith 1
+        expect(sideEffect).toHaveBeenCalledWith 2
+        expect(sideEffect).toHaveBeenCalledWith 3
+
 
   describe 'Iterable Computations', ->
 
