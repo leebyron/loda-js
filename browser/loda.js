@@ -592,6 +592,29 @@ function compare(fn, iterable) {
   }
 }
 
+/**
+ * Every
+ */
+function every(fn) {
+  return all(fn, selectArgs(arguments, 1, iterator));
+}
+
+function some(fn) {
+  return !all(complement(fn), selectArgs(arguments, 1, iterator));
+}
+
+function all(fn, iterators) {
+  var arity = iterators.length;
+  while (true) {
+    var argArray = new Array(arity);
+    for (var ii = 0; ii < arity; ii++) {
+      var step = iterators[ii].next();
+      if (step.done) return true;
+      argArray[ii] = step.value;
+    }
+    if (!fn.apply(null, argArray)) return false;
+  }
+}
 
 
 
@@ -808,6 +831,8 @@ module.exports = loda = {
   'reduce': curry(reduce, 2),
   'reduced': reduced,
   'compare': curry(compare, 2),
+  'every': curry(every, 2),
+  'some': curry(some, 2),
 
   'tuple': tuple,
   'juxt': juxt,

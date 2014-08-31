@@ -513,9 +513,35 @@ describe 'loda', ->
         reduced = reduce add, [ 1, 2, 3, 4, 5 ]
         expect(reduced).toBe 15
 
+      it 'can use a starting value', ->
+        reduced = reduce add, 100, [ 1, 2, 3, 4, 5 ]
+        expect(reduced).toBe 115
+
+      it 'returns undefined for empty iterable, not calling function', ->
+        addSpy = jasmine.createSpy().andCallFake(add)
+        reduced = reduce addSpy, []
+        expect(reduced).toBe undefined
+        expect(addSpy).not.toHaveBeenCalled
+
+      it 'returns first value for singleton iterable, not calling function', ->
+        addSpy = jasmine.createSpy().andCallFake(add)
+        reduced = reduce addSpy, [1]
+        expect(reduced).toBe 1
+        expect(addSpy).not.toHaveBeenCalled
+
+      it 'returns starting value for empty iterable, not calling function', ->
+        addSpy = jasmine.createSpy().andCallFake(add)
+        reduced = reduce addSpy, 100, []
+        expect(reduced).toBe 100
+        expect(addSpy).not.toHaveBeenCalled
+
       it 'can be curried', ->
         sum = reduce add
         expect(sum [ 1, 2, 3, 4, 5 ]).toEqual 15
+
+      it 'can short-circuit by returning reduced', ->
+        sumUpTo11 = reduce (x, y) -> if x + y < 11 then x + y else reduced x
+        expect(sumUpTo11 [ 1, 2, 3, 4, 5 ]).toEqual 10
 
 
     describe 'compare', ->
@@ -534,6 +560,55 @@ describe 'loda', ->
         isAscending = compare lteqSpy
         expect(isAscending [ 1, 2, 3, 2, 1 ]).toEqual false
         expect(lteqSpy.calls.length).toBe 3
+
+
+    describe 'every', ->
+
+      it 'ensures a predicate is true for all values in the iterable', ->
+        isOdd = mod 2
+        expect(every isOdd, [ 1, 3, 5, 7, 9 ]).toBe true
+        expect(every isOdd, [ 1, 2, 3, 4, 5 ]).toBe false
+
+      it 'can be curried', ->
+        allOdd = every mod 2
+        expect(allOdd [ 1, 3, 5, 7, 9 ]).toBe true
+        expect(allOdd [ 1, 2, 3, 4, 5 ]).toBe false
+
+      it 'can evaluate multiple iterables', ->
+        shallowEq = every eq
+        expect(shallowEq [ 1, 2, 3 ], [ 1, 2, 3 ], [ 1, 2, 3 ]).toBe true
+        expect(shallowEq [ 1, 2, 3 ], [ 3, 2, 1 ]).toBe false
+
+      it 'short-circuits on false', ->
+        eqSpy = jasmine.createSpy().andCallFake(eq)
+        shallowEq = every eqSpy
+        expect(shallowEq [ 1, 2, 3 ], [ 1, 4, 9 ]).toBe false
+        expect(eqSpy.calls.length).toBe 2
+
+
+    describe 'some', ->
+
+      it 'ensures a predicate is true for some values in the iterable', ->
+        isOdd = mod 2
+        expect(some isOdd, [ 0, 2, 4, 6, 8 ]).toBe false
+        expect(some isOdd, [ 1, 2, 3, 4, 5 ]).toBe true
+
+      it 'can be curried', ->
+        anyOdd = some mod 2
+        expect(anyOdd [ 0, 2, 4, 6, 8 ]).toBe false
+        expect(anyOdd [ 1, 2, 3, 4, 5 ]).toBe true
+
+      it 'can evaluate multiple iterables', ->
+        notCompletelyUnEq = some eq
+        expect(notCompletelyUnEq [ 1, 2, 3 ], [ 1, 2, 3 ], [ 1, 2, 3]).toBe true
+        expect(notCompletelyUnEq [ 1, 2, 3 ], [ 3, 2, 1 ]).toBe true
+        expect(notCompletelyUnEq [ 1, 2, 3 ], [ 2, 3, 4 ]).toBe false
+
+      it 'short-circuits on true', ->
+        eqSpy = jasmine.createSpy().andCallFake(eq)
+        anyEq = some eqSpy
+        expect(anyEq [ 3, 2, 1 ], [ 1, 2, 3 ]).toBe true
+        expect(eqSpy.calls.length).toBe 2
 
 
   describe 'Argument Computations', ->
