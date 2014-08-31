@@ -91,6 +91,12 @@ describe 'loda', ->
         i2 = iterator i1
         expect(i2).toBe i1
 
+      it 'returns back raw iterators', ->
+        x = 0
+        i1 = { next: -> { value: x++, done: false } }
+        i2 = iterator -> i1
+        expect(i2).toBe i1
+
       it 'iterates over array', ->
         i = iterator [1,2,3]
         expect(i.next().value).toBe 1
