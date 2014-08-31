@@ -393,6 +393,15 @@ function iteratorValue(value) {
  * ---------------
  */
 
+/**
+ * If using ES6, prefer the spread operator. These two uses are equivalent, but
+ * the latter is idiomatic ES6 JavaScript.
+ *
+ *    var mapped = map(add(1), [1,2,3])
+ *    var arr1 = array(mapped)
+ *    var arr2 = [...mapped]
+ *
+ */
 function array(iterable) {
   return reduce(append, [], iterable);
 }
