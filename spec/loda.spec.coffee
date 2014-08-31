@@ -98,6 +98,13 @@ describe 'loda', ->
         expect(i.next().value).toBe 3
         expect(i.next().value).toBe undefined
 
+      it 'iterates over string', ->
+        i = iterator 'ABC'
+        expect(i.next().value).toBe 'A'
+        expect(i.next().value).toBe 'B'
+        expect(i.next().value).toBe 'C'
+        expect(i.next().value).toBe undefined
+
       it 'iterates over object pairs', ->
         i = iterator { a: 1, b: 2, c: 3 }
         expect(i.next().value).toEqual ['a', 1]
