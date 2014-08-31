@@ -70,13 +70,18 @@ module.exports = function(grunt) {
     process.chdir(this.data.dest);
     var wrapped = wrapper.replace('"%MODULE%"', data);
     grunt.file.write(this.data.raw, wrapped);
-    var result = uglify.minify(
-      this.data.raw,
-      this.options({outSourceMap: this.data.map})
-    );
+    var result;
+    try {
+      result = uglify.minify(
+        this.data.raw,
+        this.options({outSourceMap: this.data.map})
+      );
+    } catch (error) {
+      grunt.fail.fatal(error);
+    }
     grunt.file.write(this.data.min, result.code);
     grunt.file.write(this.data.map, result.map);
-    process.chdir('../');
+    process.chdir('..');
   });
 
   grunt.registerMultiTask('size', function () {
