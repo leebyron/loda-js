@@ -1,8 +1,8 @@
-require('jasmine-check').install();
+require('jasmine-check').install()
 
 describe 'loda', ->
 
-  loda = require('../loda');
+  loda = require('../loda')
   loda.install global
 
   it 'was installed', ->

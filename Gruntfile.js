@@ -4,6 +4,7 @@ var uglify = require('uglify-js');
 module.exports = function(grunt) {
   grunt.initConfig({
     jshint: {
+      all: ['loda.js', 'resources/*.js'],
       options: {
         asi: true,
         curly: false,
@@ -22,10 +23,17 @@ module.exports = function(grunt) {
         trailing: true,
         undef: true,
         unused: 'vars',
-      },
-      all: ['loda.js', 'resources/*.js']
+      }
+    },
+    coffeelint: {
+      all: ['spec/*.coffee'],
     },
     build: {
+      all: {
+        wrapper: './resources/universal-module.js',
+        src: 'loda.js',
+        dest: 'loda.min.js'
+      },
       options: {
         fromString: true,
         mangle: {
@@ -40,19 +48,14 @@ module.exports = function(grunt) {
           max_line_len: 2048,
         },
         reserved: ['module', 'define', 'loda']
-      },
-      all: {
-        wrapper: './resources/universal-module.js',
-        src: 'loda.js',
-        dest: 'loda.min.js'
       }
     },
     jasmine_node: {
+      all: ['spec/'],
       options: {
         coffee: true,
         verbose: true,
-      },
-      all: ['spec/']
+      }
     },
     size: {
       all: {
@@ -107,8 +110,9 @@ module.exports = function(grunt) {
   });
 
   grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-coffeelint');
   grunt.loadNpmTasks('grunt-jasmine-node');
-  grunt.registerTask('lint', ['jshint']);
+  grunt.registerTask('lint', ['jshint', 'coffeelint']);
   grunt.registerTask('test', ['jasmine_node']);
   grunt.registerTask('default', ['lint', 'build', 'test', 'size']);
 }
