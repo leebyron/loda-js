@@ -393,6 +393,24 @@ describe 'loda', ->
         expect(isEmpty null).toBe true
         expect(isEmpty undefined).toBe true
 
+      it 'is true for empty array', ->
+        expect(isEmpty []).toBe true
+        expect(isEmpty [ 1, 2, 3 ]).toBe false
+
+      it 'is true for empty objects', ->
+        expect(isEmpty {}).toBe true
+        expect(isEmpty { a: 1, b: 2, c: 3 }).toBe false
+
+      it 'is true for empty strings', ->
+        expect(isEmpty '').toBe true
+        expect(isEmpty 'ABC').toBe false
+
+      it 'is true for empty arguments objects', ->
+        noArgs = (a, b, c) -> expect(isEmpty arguments).toBe true
+        noArgs()
+        withArgs = (a, b, c) -> expect(isEmpty arguments).toBe false
+        withArgs(1, 2, 3)
+
 
     describe 'filter', ->
 

@@ -462,7 +462,11 @@ function doall(iterable, sideEffect) {
  * isEmpty
  */
 function isEmpty(iterable) {
-  return !iterable || iterable.length === 0 || iterator(iterable).next().done;
+  return (
+    !iterable ||
+    (iterable.length !== undefined && iterable.length === 0) ||
+    iterator(iterable).next().done
+  );
 }
 
 /**
