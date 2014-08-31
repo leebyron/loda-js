@@ -11,6 +11,63 @@ describe 'loda', ->
 
   describe 'Function manipulation', ->
 
+    describe 'arity (argument length)', ->
+
+      it 'returns a function with a new arity', ->
+        fnOrig = (a, b, c) -> [a, b, c].join('-')
+        fn0 = arity 0, fnOrig
+        fn1 = arity 1, fnOrig
+        fn2 = arity 2, fnOrig
+        fn3 = arity 3, fnOrig
+        expect(fnOrig.length).toBe 3
+        expect(fn0.length).toBe 0
+        expect(fn1.length).toBe 1
+        expect(fn2.length).toBe 2
+        expect(fn3.length).toBe 3
+
+      it 'returns fn if it is already of the requested arity', ->
+        fnOrig = (a, b, c) -> [a, b, c].join('-')
+        fn3 = arity 3, fnOrig
+        expect(fn3).toBe fnOrig
+
+      it 'provides all arguments to the original function', ->
+        fnOrig = (a, b, c) -> [a, b, c].join('-')
+        fn1 = arity 1, fnOrig
+        expect(fn1 'A', 'B', 'C').toBe 'A-B-C'
+
+
+    describe 'call', ->
+
+
+    describe 'apply', ->
+
+
+    describe 'curry', ->
+
+
+    describe 'isCurried', ->
+
+
+    describe 'compose', ->
+
+
+    describe 'composeLeft', ->
+
+
+    describe 'partial', ->
+
+
+    describe 'partialLeft', ->
+
+
+    describe 'bound', ->
+
+
+    describe 'boundLeft', ->
+
+
+    describe 'complement', ->
+
 
   describe 'Memoization', ->
 

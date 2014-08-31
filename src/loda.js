@@ -26,7 +26,8 @@ function install(global) {
  */
 
 function arity(length, fn) {
-  return getArityFn(length)(fn);
+  length < 0 && (length = 0);
+  return length === fn.length ? fn : getArityFn(length)(fn);
 }
 
 // Internal
@@ -131,16 +132,14 @@ function compose() {
     return numFns ? fns[0] : identity;
   }
   var firstFn = fns[numFns - 1];
-  var composedArity = firstFn.length;
-  function composedFn() {
+  return arity(firstFn.length, function composedFn() {
     var result = firstFn.apply(this, arguments);
     var ii = numFns - 1;
     while (ii--) {
       result = fns[ii].call(this, result);
     }
     return result;
-  }
-  return composedArity ? arity(composedArity, composedFn) : composedFn;
+  });
 }
 
 function composeLeft() {
@@ -156,21 +155,17 @@ function composeLeft() {
 function partial(fn) {
   if (arguments.length === 1) return fn;
   var partialArgs = selectArgs(arguments, 1);
-  var remainingArity = fn.length - partialArgs.length;
-  function partialFn() {
+  return arity(fn.length - partialArgs.length, function partialFn() {
     return fn.apply(this, concat(partialArgs, arguments));
-  }
-  return remainingArity > 0 ? arity(remainingArity, partialFn) : partialFn;
+  });
 }
 
 function partialLeft(fn) {
   if (arguments.length === 1) return fn;
   var partialArgs = selectArgs(arguments, 1);
-  var remainingArity = fn.length - partialArgs.length;
-  function partialFn() {
+  return arity(fn.length - partialArgs.length, function partialFn() {
     return fn.apply(this, concat(arguments, partialArgs));
-  }
-  return remainingArity > 0 ? arity(remainingArity, partialFn) : partialFn;
+  })
 }
 
 
@@ -200,10 +195,9 @@ function boundLeft(fn) {
  */
 
 function complement(fn) {
-  function complementFn() {
+  return arity(fn.length, function complementFn() {
     return !fn.apply(this, arguments);
-  }
-  return fn.length ? arity(fn.length, complementFn) : complementFn;
+  });
 }
 
 
@@ -227,9 +221,7 @@ function memo(fn) {
   }
   memoized = isCurried(fn) ?
     curry(memoized, fn.length) :
-    fn.length ?
-      arity(fn.length, memoized) :
-      memoized;
+    arity(fn.length, memoized);
   memoized[MEMO_CACHE_SYMBOL] = {};
   return memoized;
 }
