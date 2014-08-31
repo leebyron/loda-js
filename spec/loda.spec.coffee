@@ -388,7 +388,6 @@ describe 'loda', ->
     describe 'isEmpty', ->
 
       it 'is true for falsey values', ->
-        expect(isEmpty 0).toBe true
         expect(isEmpty false).toBe true
         expect(isEmpty null).toBe true
         expect(isEmpty undefined).toBe true
@@ -412,16 +411,70 @@ describe 'loda', ->
         withArgs(1, 2, 3)
 
 
+    describe 'count', ->
+
+      it 'counts falsey values', ->
+        expect(count false).toBe 0
+        expect(count null).toBe 0
+        expect(count undefined).toBe 0
+
+      it 'counts arrays', ->
+        expect(count []).toBe 0
+        expect(count [ 1, 2, 3 ]).toBe 3
+
+      it 'counts objects', ->
+        expect(count {}).toBe 0
+        expect(count { a: 1, b: 2, c: 3 }).toBe 3
+
+      it 'counts strings', ->
+        expect(count '').toBe 0
+        expect(count 'ABC').toBe 3
+
+      it 'counts arguments objects', ->
+        noArgs = (a, b, c) -> expect(count arguments).toBe 0
+        noArgs()
+        withArgs = (a, b, c) -> expect(count arguments).toBe 3
+        withArgs(1, 2, 3)
+
+
     describe 'filter', ->
+
+      it 'uses a predicate to create a new lazy iterable', ->
+        filtered = filter gt(10), [ 1, 5, 10, 15, 3, 8, 13, 18 ]
+        expect(filtered.length).toBe undefined
+        expect(array filtered).toEqual [ 15, 13, 18 ]
+
+      it 'can be curried', ->
+        filterBigNum = filter gt 10
+        expect(array filterBigNum [ 5, 10, 15, 20 ]).toEqual [ 15, 20 ]
 
 
     describe 'map', ->
 
+      it 'uses a mapper to create a new lazy iterable', ->
+        mapped = map mul(2), [ 1, 2, 3, 4, 5 ]
+        expect(mapped.length).toBe undefined
+        expect(array mapped).toEqual [ 2, 4, 6, 8, 10 ]
+
+      it 'can be curried', ->
+        mapDouble = map mul 2
+        expect(array mapDouble [ 1, 2, 3, 4, 5 ]).toEqual [ 2, 4, 6, 8, 10 ]
+
+      it 'can map multiple input iterables', ->
+        mapped = map add,
+          [ 1, 2, 3, 4, 5 ],
+          [ 10, 20, 30, 40, 50 ],
+          [ 100, 200, 300, 400, 500 ]
+        expect(array mapped).toEqual [ 111, 222, 333, 444, 555 ]
+
+      it 'maps objects as key-value tuples', ->
+        mapUpperDouble = map ([ k, v ]) -> [ k.toUpperCase(), mul(2, v) ]
+        expect(
+          object mapUpperDouble { a: 1, b: 2, c: 3 }
+        ).toEqual { A: 2, B: 4, C: 6 }
+
 
     describe 'zip', ->
-
-
-    describe 'count', ->
 
 
     describe 'reduce', ->

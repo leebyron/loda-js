@@ -474,6 +474,21 @@ function isEmpty(iterable) {
 }
 
 /**
+ * Count
+ */
+function count(iterable) {
+  return iterable ?
+    iterable.length === undefined ?
+      reduce(increment, 0, iterable) :
+      iterable.length :
+    0;
+}
+
+function increment(x) {
+  return x + 1;
+}
+
+/**
  * Filter
  */
 function filter(fn, iterable) {
@@ -512,18 +527,6 @@ function map(fn) {
  * Zip
  */
 var zip = partial(map, tuple);
-
-/**
- * Count
- */
-function count(iterable) {
-  return iterable ? iterable.length ? iterable.length : reduce(counter, 0, iterable) : 0;
-}
-
-function counter(_, x) {
-  return x + 1;
-}
-
 
 /**
  * Reduce
@@ -567,7 +570,6 @@ function reduced(value) {
 }
 
 var REDUCED = { value : undefined };
-
 
 /**
  * Compare
@@ -799,10 +801,10 @@ module.exports = loda = {
   'doall': doall,
 
   'isEmpty': isEmpty,
+  'count': count,
   'filter': curry(filter, 2),
   'map': curry(map, 2),
   'zip': curry(zip, 2),
-  'count': count,
   'reduce': curry(reduce, 2),
   'reduced': reduced,
   'compare': curry(compare, 2),
