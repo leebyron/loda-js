@@ -27,11 +27,8 @@
     "jasmine-check": "^0.1.3",
     "uglify-js": "^2.4.15",
     "benchmark": "^1.0.0",
-    "pad": "0.0.5"
-  },
-  "optionalDependencies": {
-    "underscore": "^1.7.0",
-    "lazy.js": "^0.3.2"
+    "pad": "0.0.5",
+    "async": "^0.9.0"
   },
   "files": [
     "src",
