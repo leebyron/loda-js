@@ -749,9 +749,9 @@ function hold() {
  * -------
  */
 
-function get(key, indexed) {
+var get = curry(function (key, indexed) {
   return indexed[key];
-}
+});
 
 
 
@@ -925,7 +925,7 @@ module.exports = loda = {
   'tuple': tuple,
   'hold': hold,
 
-  'get': curry(get),
+  'get': get,
 
   'add': add,
   'sub': sub,
