@@ -9,7 +9,7 @@ describe 'loda', ->
     expect(curry).toBe loda.curry
 
 
-  describe 'Function manipulation', ->
+  describe 'function manipulation', ->
 
     describe 'arity (argument length)', ->
 
@@ -264,7 +264,7 @@ describe 'loda', ->
         ).toEqual { a: -1, b: -2, c: -3 }
 
 
-  describe 'Memoization', ->
+  describe 'memoization', ->
 
     it 'returns a function of the same arity', ->
       dashing = (a, b, c) -> [a,b,c].join '-'
@@ -273,38 +273,38 @@ describe 'loda', ->
 
     it 'memoizes a function based on arguments', ->
       dashing = jasmine.createSpy().andCallFake (a, b, c) -> [a,b,c].join '-'
-      memoized = memo(dashing)
+      memoized = memo dashing
 
-      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(memoized 'A', 'B', 'C').toEqual 'A-B-C'
       expect(dashing).toHaveBeenCalledWith 'A', 'B', 'C'
 
       dashing.reset()
-      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(memoized 'A', 'B', 'C').toEqual 'A-B-C'
       expect(dashing).not.toHaveBeenCalled
 
       dashing.reset()
-      expect(memoized('C', 'B', 'A')).toEqual 'C-B-A'
+      expect(memoized 'C', 'B', 'A').toEqual 'C-B-A'
       expect(dashing).toHaveBeenCalledWith 'C', 'B', 'A'
 
       dashing.reset()
-      expect(memoized('C', 'B', 'A')).toEqual 'C-B-A'
+      expect(memoized 'C', 'B', 'A').toEqual 'C-B-A'
       expect(dashing).not.toHaveBeenCalled
 
     it 'can be cleared', ->
       dashing = jasmine.createSpy().andCallFake (a, b, c) -> [a,b,c].join '-'
-      memoized = memo(dashing)
+      memoized = memo dashing
 
-      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(memoized 'A', 'B', 'C').toEqual 'A-B-C'
       expect(dashing).toHaveBeenCalledWith 'A', 'B', 'C'
 
       dashing.reset()
-      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(memoized 'A', 'B', 'C').toEqual 'A-B-C'
       expect(dashing).not.toHaveBeenCalled
 
-      clearMemo(memoized)
+      clearMemo memoized
 
       dashing.reset()
-      expect(memoized('A', 'B', 'C')).toEqual 'A-B-C'
+      expect(memoized 'A', 'B', 'C').toEqual 'A-B-C'
       expect(dashing).toHaveBeenCalledWith 'A', 'B', 'C'
 
     it 'can be detected as memoized', ->
@@ -313,28 +313,40 @@ describe 'loda', ->
       expect(isMemoized memoized).toBe true
 
     it 'returns a curried function if given a curried function', ->
-      spy = jasmine.createSpy()
-      spyAdd = curry(
-        () -> spy.apply(null, arguments); add.apply(null, arguments),
-        2
-      )
-      memoized = memo(spyAdd)
+      spy = jasmine.createSpy().andCallFake add
+      spyAdd = curry (a, b) -> spy a, b
+      memoized = memo spyAdd
       expect(isCurried memoized).toBe true
 
-      add1 = spyAdd(1)
+      add1 = spyAdd 1
       expect(spy).not.toHaveBeenCalled
       expect(add1 1).toBe 2
       expect(spy).toHaveBeenCalledWith 1, 1
 
       spy.reset()
-      anotherAdd1 = spyAdd(1)
+      anotherAdd1 = spyAdd 1
       expect(anotherAdd1).not.toBe add1
       expect(spy).not.toHaveBeenCalled
       expect(add1 1).toBe 2
       expect(spy).not.toHaveBeenCalled
 
+    it 'is idempotent', ->
+      memoized = memo add
+      memoized2 = memo memoized
+      expect(memoized2).toBe memoized
 
-  describe 'Iterables', ->
+
+  describe 'iterables', ->
+
+    describe 'makeIterable', ->
+
+      it 'makes an iterable from a function', ->
+        counter = makeIterable -> i = 0; -> { value: i++ }
+        i = iterator counter
+        expect(i.next().value).toBe 0
+        expect(i.next().value).toBe 1
+        expect(i.next().value).toBe 2
+
 
     describe 'iterator', ->
 
@@ -404,26 +416,28 @@ describe 'loda', ->
         s = string i
         expect(s).toEqual '123'
 
-      it 'can produce side effects', ->
-        sideEffect = jasmine.createSpy()
-        i = iterator [ 1, 2, 3 ]
-        doall i, sideEffect
-        expect(sideEffect).toHaveBeenCalledWith 1
-        expect(sideEffect).toHaveBeenCalledWith 2
-        expect(sideEffect).toHaveBeenCalledWith 3
+      describe 'doall', ->
 
-      it 'can force side effects', ->
-        sideEffect = jasmine.createSpy()
-        mapSqWithSideEffect = map (x) -> sideEffect x; x * x
-        m = mapSqWithSideEffect [ 1, 2, 3 ]
-        expect(sideEffect).not.toHaveBeenCalled
-        doall m
-        expect(sideEffect).toHaveBeenCalledWith 1
-        expect(sideEffect).toHaveBeenCalledWith 2
-        expect(sideEffect).toHaveBeenCalledWith 3
+        it 'produces side effects', ->
+          sideEffect = jasmine.createSpy()
+          i = iterator [ 1, 2, 3 ]
+          doall sideEffect, i
+          expect(sideEffect).toHaveBeenCalledWith 1
+          expect(sideEffect).toHaveBeenCalledWith 2
+          expect(sideEffect).toHaveBeenCalledWith 3
+
+        it 'is curried', ->
+          sideEffect = jasmine.createSpy()
+          doAllSideEffect = doall sideEffect
+          expect(sideEffect).not.toHaveBeenCalled
+
+          doAllSideEffect [ 1, 2, 3 ]
+          expect(sideEffect).toHaveBeenCalledWith 1
+          expect(sideEffect).toHaveBeenCalledWith 2
+          expect(sideEffect).toHaveBeenCalledWith 3
 
 
-  describe 'Iterable Computations', ->
+  describe 'iterable computations', ->
 
     describe 'isEmpty', ->
 
@@ -475,6 +489,19 @@ describe 'loda', ->
         noArgs()
         withArgs = (a, b, c) -> expect(count arguments).toBe 3
         withArgs(1, 2, 3)
+
+
+    describe 'take', ->
+
+      it 'takes a set number of elements from an iterator', ->
+        i = iterator -> x = 0; -> { value: x++ }
+        five = take 5, i
+        expect(array five).toEqual [ 0, 1, 2, 3, 4 ]
+
+      it 'is curried', ->
+        i = iterator -> x = 0; -> { value: x++ }
+        takeFive = take 5
+        expect(array takeFive i).toEqual [ 0, 1, 2, 3, 4 ]
 
 
     describe 'filter', ->
@@ -545,6 +572,81 @@ describe 'loda', ->
           [ 2, 5, 8 ],
           [ 3, 6, 9 ]
         ]
+        flippedBack = array apply zip, flippedMatrix
+        expect(flippedBack).toEqual matrix
+
+
+    describe 'flatten', ->
+
+      it 'iterates over a tree of iterables', ->
+        expect(
+          array flatten [ 1, [ 2, 3 ], [ [ 4 ], 5 ] ]
+        ).toEqual [ 1, 2, 3, 4, 5 ]
+
+      it 'does not flatten strings and objects', ->
+        expect(
+          array flatten [ 1, [ 2, '345' ], [ [ 6 ], { k1: 7, k2: 8 } ] ]
+        ).toEqual [ 1, 2, '345', 6, { k1: 7, k2: 8 } ]
+
+      it 'flattens iterators of strings and objects', ->
+        expect(
+          array flatten [
+            1, [ 2, iterator('345') ],
+            [ [ 6 ], iterator({ k1: 7, k2: 8 }) ]
+          ]
+        ).toEqual [ 1, 2, '3', '4', '5', 6, 'k1', 7, 'k2', 8 ]
+
+
+    describe 'memoIterable', ->
+
+      it 'caches an iterable', ->
+        spyInc = jasmine.createSpy().andCallFake add 1
+        oneUp = map spyInc, [ 1, 2, 3, 4, 5 ]
+
+        expect(array oneUp).toEqual [ 2, 3, 4, 5, 6 ]
+        expect(spyInc.calls.length).toBe 5
+        expect(string oneUp).toEqual '23456'
+        expect(spyInc.calls.length).toBe 10
+
+        spyInc.reset()
+
+        memoOneUp = memoIterable oneUp
+        expect(array memoOneUp).toEqual [ 2, 3, 4, 5, 6 ]
+        expect(spyInc.calls.length).toBe 5
+        expect(string memoOneUp).toEqual '23456'
+        expect(spyInc.calls.length).toBe 5
+
+      it 'handles a race', ->
+        spyInc = jasmine.createSpy().andCallFake add 1
+        memoOneUp = memoIterable map spyInc, [ 0, 1, 2 ]
+
+        i1 = iterator memoOneUp
+        i2 = iterator memoOneUp
+        expect(spyInc.calls.length).toBe 0
+
+        expect(i1.next().value).toBe 1
+        expect(spyInc.calls.length).toBe 1
+
+        expect(i2.next().value).toBe 1
+        expect(spyInc.calls.length).toBe 1
+
+        expect(i2.next().value).toBe 2
+        expect(spyInc.calls.length).toBe 2
+
+        expect(i1.next().value).toBe 2
+        expect(spyInc.calls.length).toBe 2
+
+        expect(i1.next().value).toBe 3
+        expect(spyInc.calls.length).toBe 3
+
+        expect(i2.next().value).toBe 3
+        expect(spyInc.calls.length).toBe 3
+
+        expect(i2.next().value).toBe undefined
+        expect(spyInc.calls.length).toBe 3
+
+        expect(i1.next().value).toBe undefined
+        expect(spyInc.calls.length).toBe 3
 
 
     describe 'reduce', ->

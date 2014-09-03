@@ -79,19 +79,23 @@ function apply(fn, argArray, thisArg) {
 function curry(fn, arity) {
   arity = arity || fn.length;
   return arity > 1 ?
-    getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, isCurried(fn) ? fn[CURRY_SYMBOL] : fn) :
+    getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, uncurry(fn)) :
     fn;
 }
 
 function curryRight(fn, arity) {
   arity = arity || fn.length;
   return arity > 1 ?
-    getCurryRightFn(arity)(getCurryRightFn, CURRY_SYMBOL, isCurried(fn) ? fn[CURRY_SYMBOL] : fn) :
+    getCurryRightFn(arity)(getCurryRightFn, CURRY_SYMBOL, uncurry(fn)) :
     fn;
 }
 
 function isCurried(fn) {
   return !!fn[CURRY_SYMBOL];
+}
+
+function uncurry(fn) {
+  return isCurried(fn) ? fn[CURRY_SYMBOL] : fn;
 }
 
 // Internal
@@ -182,7 +186,7 @@ function compose() {
 }
 
 function composeRight() {
-  return apply(compose, Array.prototype.reverse.call(arguments));
+  return compose.apply(this, Array.prototype.reverse.call(arguments));
 }
 
 
@@ -338,13 +342,18 @@ function knit(/* ... */) {
  * Memo
  */
 function memo(fn) {
+  if (isMemoized(fn)) {
+    return fn;
+  }
+  var wasCurried = isCurried(fn);
+  wasCurried && (fn = uncurry(fn));
   var memoized = function () {
     var arg = reduce(argCache, memoized[MEMO_CACHE_SYMBOL], arguments);
     return arg.hasOwnProperty(MEMO_CACHE_SYMBOL) ?
       arg[MEMO_CACHE_SYMBOL] :
       (arg[MEMO_CACHE_SYMBOL] = fn.apply(this, arguments));
   }
-  memoized = isCurried(fn) ?
+  memoized = wasCurried ?
     curry(memoized, fn.length) :
     arity(fn.length, memoized);
   memoized[MEMO_CACHE_SYMBOL] = {};
@@ -373,17 +382,17 @@ function clearMemo(memoized) {
 
 
 /**
- * Iteratable
- * ----------
+ * Iterable
+ * --------
  */
 
 function iterator(maybeIterable) {
-  return !maybeIterable || typeof maybeIterable.next === 'function' ?
+  return maybeIterable && typeof maybeIterable.next === 'function' ?
     maybeIterable :
-    castIterable(maybeIterable)[ITERATOR_SYMBOL]();
+    makeIterable(maybeIterable)[ITERATOR_SYMBOL]();
 }
 
-function castIterable(maybeIterable) {
+function makeIterable(maybeIterable) {
   if (!maybeIterable) {
     return EMPTY_ITERABLE;
   }
@@ -415,7 +424,7 @@ function LodaIterable(iteratorFactory) {
 }
 LodaIterable.prototype[ITERATOR_SYMBOL] = function() {
   var iterator = this.iteratorFactory();
-  return typeof iterator.next === 'function' ? iterator : new LodaIterator(iterator);
+  return iterator.next ? iterator : new LodaIterator(iterator);
 }
 LodaIterable.prototype.toString =
 LodaIterable.prototype.toSource =
@@ -535,7 +544,7 @@ var string = partial(reduce, add2, '');
  *    for (x of mapped) console.log(x)
  *
  */
-function doall(iterable, sideEffect) {
+function doall(sideEffect, iterable) {
   var iter = iterator(iterable);
   while (true) {
     var step = iter.next();
@@ -579,6 +588,19 @@ function increment(x) {
 }
 
 /**
+ * Take
+ */
+function take(num, iterable) {
+  return new LodaIterable(function () {
+    var iter = iterator(iterable);
+    var ii = 0;
+    return function () {
+      return ++ii > num ? ITERATOR_DONE : iter.next()
+    }
+  });
+}
+
+/**
  * Filter
  */
 function filter(fn, iterable) {
@@ -617,6 +639,55 @@ function map(fn) {
  * Zip
  */
 var zip = partial(map, tuple);
+
+/**
+ * Flatten
+ */
+function flatten(deepIterable) {
+  return new LodaIterable(function () {
+    var iter = iterator(deepIterable);
+    var stack = [];
+    return function () {
+      while (iter) {
+        var step = iter.next();
+        var value = step.value;
+        if (step.done) {
+          iter = stack.pop();
+        } else if (value && (value.length >= 0 || value[ITERATOR_SYMBOL]) &&
+                   typeof value !== 'string') {
+          stack.push(iter);
+          iter = iterator(value);
+        } else {
+          return step;
+        }
+      }
+      return ITERATOR_DONE;
+    }
+  });
+}
+
+/**
+ * Memoize Iterable
+ */
+function memoIterable(iterable) {
+  var iter = iterator(iterable);
+  var cache = [];
+  var cacheFilled;
+  return new LodaIterable(function () {
+    if (cacheFilled) {
+      return iterator(cache);
+    }
+    var ii = 0;
+    return function () {
+      if (ii++ < cache.length) {
+        return iteratorValue(cache[ii - 1]);
+      }
+      var step = iter.next();
+      step.done ? (cacheFilled = true) : cache.push(step.value);
+      return step;
+    }
+  });
+}
 
 /**
  * Reduce
@@ -903,18 +974,22 @@ module.exports = loda = {
   'isMemoized': isMemoized,
   'clearMemo': clearMemo,
 
+  'makeIterable': makeIterable,
   'iterator': iterator,
 
   'array': array,
   'object': object,
   'string': string,
-  'doall': doall,
+  'doall': curry(doall),
 
   'isEmpty': isEmpty,
   'count': count,
+  'take': curry(take, 2),
   'filter': curry(filter, 2),
   'map': curry(map, 2),
   'zip': curry(zip, 2),
+  'flatten': flatten,
+  'memoIterable': memoIterable,
   'reduce': curry(reduce, 2),
   'reduced': reduced,
   'compare': curry(compare, 2),
