@@ -387,16 +387,21 @@ function clearMemo(memoized) {
  */
 
 function iterator(maybeIterable) {
+  var iterable;
   return maybeIterable && typeof maybeIterable.next === 'function' ?
     maybeIterable :
-    makeIterable(maybeIterable)[ITERATOR_SYMBOL]();
+    (iterable = makeIterable(maybeIterable)) &&
+    (iterable[ITERATOR_SYMBOL] ?
+      iterable[ITERATOR_SYMBOL]() :
+      iterable[ALT_ITERATOR_SYMBOL]());
 }
 
 function makeIterable(maybeIterable) {
   if (!maybeIterable) {
     return EMPTY_ITERABLE;
   }
-  if (maybeIterable[ITERATOR_SYMBOL]) {
+  if (maybeIterable[ITERATOR_SYMBOL] ||
+      maybeIterable[ALT_ITERATOR_SYMBOL]) {
     return maybeIterable;
   }
   if (typeof maybeIterable === 'function') {
@@ -413,9 +418,9 @@ function makeIterable(maybeIterable) {
 
 // Internal iterator helpers
 
-var ITERATOR_SYMBOL = typeof Symbol === 'function' ?
-  Symbol.iterator :
-  '@@iterator';
+var ALT_ITERATOR_SYMBOL = '@@iterator';
+var ITERATOR_SYMBOL =
+  typeof Symbol === 'function' ? Symbol.iterator : ALT_ITERATOR_SYMBOL;
 var ITERATOR_DONE = { done: true, value: undefined };
 var ITERATOR_VALUE = { done: false, value: undefined };
 
