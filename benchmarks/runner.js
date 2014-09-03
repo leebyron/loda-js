@@ -18,8 +18,9 @@ function runBenchmarks(config) {
 function testResult(test) {
   return test.name + '\n' +
     _.string(_.map(function (testResult) {
-      return pad(test.name, 12) + ': ' +
-        pad(15, test.hz.toFixed(2)) + ' +/- ' + test.stats.rme.toFixed(2) + '% op/s\n'
+      return pad(testResult.name, 12) + ': ' +
+        pad(15, testResult.hz.toFixed(2)) +
+        ' +/- ' + testResult.stats.rme.toFixed(2) + '% op/s\n'
     }, test.run()));
 }
 

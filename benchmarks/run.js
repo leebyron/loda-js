@@ -34,7 +34,6 @@ runBenchmarks({
         100: [square, makeArray(100)],
         1000: [square, makeArray(1000)],
         10000: [square, makeArray(10000)],
-        100000: [square, makeArray(100000)],
       },
       loda: function (_, mapper, input) {
         return function () {
