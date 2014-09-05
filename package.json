@@ -17,7 +17,7 @@
   "main": "src/loda.js",
   "scripts": {
     "test": "grunt test",
-    "bench": "node ./benchmarks/run.js"
+    "bench": "node ./benchmarks/bench.js"
   },
   "devDependencies": {
     "grunt": "^0.4.5",

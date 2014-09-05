@@ -42,7 +42,7 @@ function getLibraries(libInfo, withLibs) {
         });
       } else {
         var npmName = dep.name + '@' + dep.version;
-        console.log('installing', npmName);
+        console.log('installing: ' + npmName + '\n');
         exec('npm install ' + npmName, function () {
           done(null, {
             key: dep.key,
@@ -52,12 +52,12 @@ function getLibraries(libInfo, withLibs) {
       }
     },
     function (err, result) {
-      withLibs(
-        _.object(
-          _.filter(_.get(1),
-            _.map(
-              _.juxt(_.get('key'), _.get('module')),
-              result))));
+      _.pipe(result)(
+        _.map(_.juxt(_.get('key'), _.get('module'))),
+        _.filter(_.get(1)),
+        _.object,
+        withLibs
+      );
     }
   );
 }

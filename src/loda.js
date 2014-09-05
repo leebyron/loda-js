@@ -9,7 +9,9 @@ var loda;
 function install(global) {
   for (var x in loda) {
     if (loda[x] !== install) {
-      if (global[x]) throw new Error(x + ' already in scope');
+      if (global[x] && global[x] !== loda[x]) {
+        throw new Error(x + ' already in scope');
+      }
       global[x] = loda[x];
     }
   }
@@ -57,8 +59,14 @@ function makeArityFn(length) {
  * Call
  */
 
-function call(fn /*, ... */) {
-  return fn.apply(null, selectArgs(arguments, 1));
+function call(fn, maybeFunctor) {
+  if (arguments.length === 2 &&
+      maybeFunctor &&
+      typeof maybeFunctor.map === 'function') {
+    return maybeFunctor.map(fn);
+  }
+  var $_arguments = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) $_arguments[$_i - 1] = arguments[$_i];
+  return fn.apply(this, $_arguments);
 }
 
 
@@ -67,7 +75,7 @@ function call(fn /*, ... */) {
  */
 
 function apply(fn, argArray, thisArg) {
-  return fn.apply(thisArg, argArray);
+  return fn.apply(thisArg || this, argArray);
 }
 
 
@@ -82,6 +90,8 @@ function curry(fn, arity) {
     getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, uncurry(fn)) :
     fn;
 }
+
+curry.right = curryRight;
 
 function curryRight(fn, arity) {
   arity = arity || fn.length;
@@ -185,6 +195,8 @@ function compose() {
   });
 }
 
+compose.right = composeRight;
+
 function composeRight() {
   return compose.apply(this, Array.prototype.reverse.call(arguments));
 }
@@ -203,6 +215,8 @@ function partial(fn) {
   });
 }
 
+partial.right = partialRight;
+
 function partialRight(fn) {
   if (arguments.length === 1) return fn;
   var partialArgs = selectArgs(arguments, 1);
@@ -218,36 +232,36 @@ function partialRight(fn) {
  */
 
 /**
- * `functionize` returns a new function with an additional argument which will
- * be provided to the original fn as `this`. This is particularly useful for
- * wrapping prototype methods of built-ins. Example:
+ * `decontextify` returns a new function with an additional argument which will
+ * be provided to the original fn as its `this` context. This is particularly
+ * useful for wrapping prototype methods of built-ins. Example:
  *
- *     var slice = functionize(Array.prototype.slice);
+ *     var slice = decontextify(Array.prototype.slice);
  *     slice(2, [ 1, 2, 3, 4 ])      // [ 3, 4 ]
  *     slice(1, -1, [ 1, 2, 3, 4 ])  // [ 2, 3 ]
  *
  * This is similar to `partial(call, myFn)`, but will return a function with an
  * arity based on the provided function.
  */
-function functionize(fn) {
-  return arity(fn.length + 1, function () {
-    // TODO: jsperf this.
-    var thisArg = Array.prototype.pop.call(arguments);
-    return fn.apply(thisArg, arguments);
+function decontextify(fn) {
+  return arity(fn.length + 1, function (thisArg) {
+    var $_thisArg = arguments[arguments.length - 1];
+    var $_arguments = new Array(arguments.length - 1); for (var $_i = 0; $_i < arguments.length - 1; ++$_i) $_arguments[$_i] = arguments[$_i];
+    return fn.apply($_thisArg, $_arguments);
   });
 }
 
 /**
- * The opposite of `functionize`, `methodize` will provide the `this` context
+ * The opposite of `decontextify`, `contextify` will provide the `this` context
  * it is called with as the last argument to the original function.
  */
-function methodize(fn) {
+function contextify(fn) {
   return arity(fn.length - 1, function () {
-    Array.prototype.push.call(arguments, this);
-    return fn.apply(null, arguments);
+    var $_arguments = new Array(arguments.length + 1); for (var $_i = 0; $_i < arguments.length; ++$_i) $_arguments[$_i] = arguments[$_i];
+    $_arguments[$_i] = this;
+    return fn.apply(null, $_arguments);
   });
 }
-
 
 
 /**
@@ -386,17 +400,17 @@ function clearMemo(memoized) {
  * --------
  */
 
-function iterator(maybeIterable) {
+function _iterator(maybeIterable) {
   var iterable;
   return maybeIterable && typeof maybeIterable.next === 'function' ?
     maybeIterable :
-    (iterable = makeIterable(maybeIterable)) &&
+    (iterable = _iterable(maybeIterable)) &&
     (iterable[ITERATOR_SYMBOL] ?
       iterable[ITERATOR_SYMBOL]() :
       iterable[ALT_ITERATOR_SYMBOL]());
 }
 
-function makeIterable(maybeIterable) {
+function _iterable(maybeIterable) {
   if (!maybeIterable) {
     return EMPTY_ITERABLE;
   }
@@ -411,50 +425,61 @@ function makeIterable(maybeIterable) {
     return EMPTY_ITERABLE;
   }
   if (maybeIterable.length > 0) {
-    return indexedIterable(maybeIterable);
+    return new IndexedIterable(maybeIterable);// indexedIterable(maybeIterable);
   }
   return keyedIterable(maybeIterable);
 }
 
 // Internal iterator helpers
 
-var ALT_ITERATOR_SYMBOL = '@@iterator';
+function isIterable(maybeIterable) {
+  return !!(maybeIterable && (
+    maybeIterable[ITERATOR_SYMBOL] ||
+    maybeIterable[ALT_ITERATOR_SYMBOL] ||
+    isArray(maybeIterable) ||
+    typeof maybeIterable === 'string'
+  ));
+}
+
+var ALT_ITERATOR_SYMBOL = '@@_iterator';
 var ITERATOR_SYMBOL =
-  typeof Symbol === 'function' ? Symbol.iterator : ALT_ITERATOR_SYMBOL;
+  typeof Symbol === 'function' ? Symbol._iterator : ALT_ITERATOR_SYMBOL;
 var ITERATOR_DONE = { done: true, value: undefined };
 var ITERATOR_VALUE = { done: false, value: undefined };
 
-function LodaIterable(iteratorFactory) {
-  this.iteratorFactory = iteratorFactory;
+function LodaIterable(_iteratorFactory) {
+  this._iteratorFactory = _iteratorFactory;
 }
 LodaIterable.prototype[ITERATOR_SYMBOL] = function() {
-  var iterator = this.iteratorFactory();
-  return iterator.next ? iterator : new LodaIterator(iterator);
+  var _iterator = this._iteratorFactory();
+  return _iterator.next ? _iterator : new LodaIterator(_iterator);
 }
 LodaIterable.prototype.toString =
 LodaIterable.prototype.toSource =
 LodaIterable.prototype.inspect = function() {
   return '[Iterable]';
 }
-
 function LodaIterator(next) {
   this.next = next;
 }
-LodaIterator.prototype[ITERATOR_SYMBOL] = function() {
-  return this
+
+function IndexedIterable(indexed) {
+  this.indexed = indexed;
+}
+IndexedIterable.prototype = new LodaIterable();
+IndexedIterable.prototype[ITERATOR_SYMBOL] = function() {
+  return new IndexedIterator(this.indexed);
+}
+function IndexedIterator(indexed) {
+  this.indexed = indexed;
+  this.index = 0;
+}
+IndexedIterator.prototype.next = function() {
+  return this.index === this.indexed.length ?
+    ITERATOR_DONE :
+    _iteratorValue(this.indexed[this.index++]);
 }
 
-function indexedIterable(indexed) {
-  return new LodaIterable(function() {
-    var ii = 0;
-    return function () {
-      if (ii === indexed.length) {
-        return ITERATOR_DONE;
-      }
-      return iteratorValue(indexed[ii++]);
-    };
-  });
-}
 
 function keyedIterable(keyed) {
   return new LodaIterable(function() {
@@ -464,7 +489,7 @@ function keyedIterable(keyed) {
       if (ii === keys.length) {
         return ITERATOR_DONE;
       }
-      return iteratorValue([keys[ii], keyed[keys[ii++]]]);
+      return _iteratorValue([keys[ii], keyed[keys[ii++]]]);
     };
   });
 }
@@ -477,7 +502,7 @@ EMPTY_ITERATOR.next = function () {
   return ITERATOR_DONE;
 }
 
-function iteratorValue(value) {
+function _iteratorValue(value) {
   ITERATOR_VALUE.value = value;
   return ITERATOR_VALUE;
 }
@@ -550,11 +575,11 @@ var string = partial(reduce, add2, '');
  *
  */
 function doall(sideEffect, iterable) {
-  var iter = iterator(iterable);
+  var iter = _iterator(iterable);
   while (true) {
     var step = iter.next();
-    if (step.done) return;
-    sideEffect && sideEffect(step.value);
+    if (step.done !== false) return;
+    sideEffect(step.value);
   }
 }
 
@@ -573,7 +598,7 @@ function isEmpty(iterable) {
   return (
     !iterable ||
     (iterable.length !== undefined && iterable.length === 0) ||
-    iterator(iterable).next().done
+    _iterator(iterable).next().done
   );
 }
 
@@ -597,7 +622,7 @@ function increment(x) {
  */
 function take(num, iterable) {
   return new LodaIterable(function () {
-    var iter = iterator(iterable);
+    var iter = _iterator(iterable);
     var ii = 0;
     return function () {
       return ++ii > num ? ITERATOR_DONE : iter.next()
@@ -610,7 +635,7 @@ function take(num, iterable) {
  */
 function filter(fn, iterable) {
   return new LodaIterable(function () {
-    var iter = iterator(iterable);
+    var iter = _iterator(iterable);
     return function () {
       while (true) {
         var step = iter.next();
@@ -623,22 +648,24 @@ function filter(fn, iterable) {
 /**
  * Map
  */
-function map(fn) {
-  var iterables = arguments;
+function map(fn, iterable) {
+  var iterables = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) iterables[$_i - 1] = arguments[$_i];
   return new LodaIterable(function () {
-    var iterators = selectArgs(iterables, 1, iterator);
-    var arity = iterators.length;
+    var _iterators = selectArgs(iterables, 0, _iterator);
+    var arity = _iterators.length;
+    var argArray = new Array(arity);
+    var step, ii;
     return function () {
-      var argArray = new Array(arity);
-      for (var ii = 0; ii < arity; ii++) {
-        var step = iterators[ii].next();
-        if (step.done) return step;
+      for (ii = 0; ii < arity; ii++) {
+        step = _iterators[ii].next();
+        if (step.done !== false) return step;
         argArray[ii] = step.value;
       }
-      return iteratorValue(fn.apply(null, argArray));
+      return _iteratorValue(fn.apply(null, argArray));
     }
   });
 }
+
 
 /**
  * Zip
@@ -650,18 +677,17 @@ var zip = partial(map, tuple);
  */
 function flatten(deepIterable) {
   return new LodaIterable(function () {
-    var iter = iterator(deepIterable);
+    var iter = _iterator(deepIterable);
     var stack = [];
     return function () {
       while (iter) {
         var step = iter.next();
         var value = step.value;
-        if (step.done) {
+        if (step.done !== false) {
           iter = stack.pop();
-        } else if (value && (value.length >= 0 || value[ITERATOR_SYMBOL]) &&
-                   typeof value !== 'string') {
+        } else if (isIterable(value) && typeof value !== 'string') {
           stack.push(iter);
-          iter = iterator(value);
+          iter = _iterator(value);
         } else {
           return step;
         }
@@ -675,17 +701,17 @@ function flatten(deepIterable) {
  * Memoize Iterable
  */
 function memoIterable(iterable) {
-  var iter = iterator(iterable);
+  var iter = _iterator(iterable);
   var cache = [];
   var cacheFilled;
   return new LodaIterable(function () {
     if (cacheFilled) {
-      return iterator(cache);
+      return _iterator(cache);
     }
     var ii = 0;
     return function () {
       if (ii++ < cache.length) {
-        return iteratorValue(cache[ii - 1]);
+        return _iteratorValue(cache[ii - 1]);
       }
       var step = iter.next();
       step.done ? (cacheFilled = true) : cache.push(step.value);
@@ -693,6 +719,11 @@ function memoIterable(iterable) {
     }
   });
 }
+
+/**
+ * Join
+ */
+var join = curry(decontextify(Array.prototype.join));
 
 /**
  * Reduce
@@ -709,19 +740,18 @@ function memoIterable(iterable) {
  * applying f to that result and the 2nd item, etc. If coll contains no
  * items, returns val and f is not called.
  */
-function reduce(fn, iterable) {
-  var reduced = arguments[2];
-  var iter;
-  if (reduced) {
-    iter = iterator(reduced);
-    reduced = iterable;
+function reduce(fn) {
+  var reduced, iter;
+  if (arguments.length === 3) {
+    iter = _iterator(arguments[2]);
+    reduced = arguments[1];
   } else {
-    iter = iterator(iterable);
+    iter = _iterator(arguments[1]);
     reduced = iter.next().value;
   }
   while (true) {
     var step = iter.next();
-    if (step.done) return reduced;
+    if (step.done !== false) return reduced;
     reduced = fn(reduced, step.value);
     if (reduced === REDUCED) return REDUCED.value;
   }
@@ -744,15 +774,15 @@ function compare(fn, iterable) {
   var left = arguments[2];
   var iter;
   if (left) {
-    iter = iterator(left);
+    iter = _iterator(left);
     left = iterable;
   } else {
-    iter = iterator(iterable);
+    iter = _iterator(iterable);
     left = iter.next().value;
   }
   while (true) {
     var step = iter.next();
-    if (step.done) return true;
+    if (step.done !== false) return true;
     if (!fn(left, step.value)) return false;
     left = step.value;
   }
@@ -762,20 +792,20 @@ function compare(fn, iterable) {
  * Every
  */
 function every(fn) {
-  return all(fn, selectArgs(arguments, 1, iterator));
+  return all(fn, selectArgs(arguments, 1, _iterator));
 }
 
 function some(fn) {
-  return !all(complement(fn), selectArgs(arguments, 1, iterator));
+  return !all(complement(fn), selectArgs(arguments, 1, _iterator));
 }
 
-function all(fn, iterators) {
-  var arity = iterators.length;
+function all(fn, _iterators) {
+  var arity = _iterators.length;
   while (true) {
     var argArray = new Array(arity);
     for (var ii = 0; ii < arity; ii++) {
-      var step = iterators[ii].next();
-      if (step.done) return true;
+      var step = _iterators[ii].next();
+      if (step.done !== false) return true;
       argArray[ii] = step.value;
     }
     if (!fn.apply(null, argArray)) return false;
@@ -808,14 +838,17 @@ function tuple(/* ... */) {
  * another function, will return the results of being supplied with the
  * original arguments. Example:
  *
- *     hold(1, 2, 3)(add)  // 6
+ *     pipe(1, 2, 3)(add)  // 6
+ *
+ * If provided multiple functions, it will call each with the value returned
+ * from the previous, similar to underscore's `chain`.
+ *
+ *     pipe(1, 2, 3)(add, mul(2), add(1))  // 13
  *
  */
-function hold() {
-  var args = arguments;
-  return function(fn) {
-    return fn.apply(null, args);
-  }
+function pipe() {
+  var $_arguments = new Array(arguments.length); for (var $_i = 0; $_i < arguments.length; ++$_i) $_arguments[$_i] = arguments[$_i];
+  return compose(partialRight(apply, $_arguments), composeRight);
 }
 
 
@@ -877,9 +910,7 @@ function neg(x) {
  * -----------
  */
 
-var eq = curry(argComparer(function (x, y) {
-  return x && x.equals ? x.equals(y) : x === y;
-}), 2);
+var eq = curry(argComparer(eq2), 2);
 
 var lt = curryRight(argComparer(function (x, y) {
   return x < y;
@@ -898,6 +929,136 @@ var gteq = curryRight(argComparer(function (x, y) {
 }), 2);
 
 
+/**
+ * Functors / Monads / Monoids
+ */
+
+// TODO: if value is just an iterator, use the list comprehension form.
+function fmap(fn, functor) {
+  if (isCurried(fn) && fn.length > 1 && functor.chain) {
+    return fbind(function (value) {
+      return fof(functor, curry(partial(uncurry(fn), value), fn.length - 1));
+    }, functor);
+  }
+  if (functor.map) { // is Functor
+    return functor.map(fn);
+  }
+  if (functor.ap) { // is Apply
+    return fapply(fof(functor, fn), functor);
+  }
+  if (functor.chain && functor.of) { // is Monad
+    return fbind(function (a) { return fof(functor, fn(a)); }, functor);
+  }
+  throw new Error('Value provided is not Functor: ' + functor);
+}
+
+// TODO: handle curried case
+function fapply(appFn, appVal) {
+  if (appFn.ap) { // is Apply
+    return appFn.ap(appVal);
+  } else if (appFn.chain) { // is Chain
+    return fbind(function (fn) { return fmap(fn, appVal); }, appFn);
+  }
+  throw new Error('Value provided is not Apply: ' + appFn);
+}
+
+function fof(applicative, value) {
+  if (applicative.of) { // is Applicative
+    return applicative.of(value);
+  }
+  throw new Error('Value provided is not Applicative: ' + applicative);
+}
+
+function fbind(fn, monad) {
+  if (monad.chain) { // is Chain
+    return monad.chain(fn);
+  }
+  throw new Error('Value provided is not Monad: ' + monad);
+}
+
+/**
+ * Maybe
+ */
+function Maybe(value) {
+  return value == null ?
+    MaybeNone :
+    value instanceof Maybe ?
+      value :
+      new MaybeValue(value);
+}
+Maybe.of = Maybe;
+Maybe.prototype.of = Maybe;
+Maybe.is = function (maybe) {
+  return maybe instanceof MaybeValue;
+};
+Maybe.force = function (maybe) {
+  if (maybe instanceof MaybeValue) {
+    return maybe._value;
+  }
+  throw new Error('Cannot force non-Value: ' + maybe);
+};
+Maybe.or = curry(function (defaultValue, maybe) {
+  return maybe instanceof MaybeValue ? maybe._value : defaultValue;
+});
+
+function MaybeValue(value) {
+  if (this instanceof MaybeValue) {
+    this._value = value;
+  } else {
+    return new MaybeValue(value);
+  }
+}
+MaybeValue.prototype = Object.create(Maybe.prototype);
+MaybeValue.prototype.toString =
+MaybeValue.prototype.toSource =
+MaybeValue.prototype.inspect = function() {
+  return 'Maybe.Value ' + this._value;
+}
+MaybeValue.prototype.equals = function(maybe) {
+  return maybe instanceof MaybeValue && eq2(this._value, maybe._value);
+}
+MaybeValue.prototype.map = function(fn) {
+  return new MaybeValue(fn(this._value));
+}
+MaybeValue.prototype.ap = function(maybe) {
+  return fmap(this._value, maybe);
+}
+MaybeValue.prototype.chain = function(fn) {
+  return fn(this._value);
+}
+MaybeValue.prototype[ITERATOR_SYMBOL] = function() {
+  return new IndexedIterator([this._value]);
+}
+Maybe.Value = MaybeValue;
+
+function MaybeNone() {
+  return MaybeNone;
+}
+MaybeNone.prototype = Object.create(Maybe.prototype);
+MaybeNone.prototype.toString =
+MaybeNone.prototype.toSource =
+MaybeNone.prototype.inspect = function() {
+  return 'Maybe.None';
+}
+MaybeNone.prototype.equals = function(maybe) {
+  return maybe === MaybeNone;
+}
+MaybeNone.prototype.map =
+MaybeNone.prototype.ap =
+MaybeNone.prototype.chain = function(fn) {
+  return MaybeNone;
+}
+MaybeNone.prototype[ITERATOR_SYMBOL] = function() {
+  return EMPTY_ITERATOR;
+}
+var setPrototypeOf = Object.setPrototypeOf || function (obj, proto) {
+  obj.__proto__ = proto; // jshint ignore: line
+  return obj;
+}
+setPrototypeOf(MaybeNone, MaybeNone.prototype);
+Maybe.None = MaybeNone;
+
+
 
 /**
  * Internal helper methods
@@ -905,6 +1066,10 @@ var gteq = curryRight(argComparer(function (x, y) {
 
 function add2(x, y) {
   return x + y;
+}
+
+function eq2(x, y) {
+  return x === y || (x && x.equals && x.equals(y));
 }
 
 function concat(indexed1, indexed2) {
@@ -950,6 +1115,10 @@ function argComparer(fn) {
   }
 }
 
+var isArray = Array.isArray || function (maybeArray) {
+  return maybeArray.constructor === Array;
+}
+
 
 
 /**
@@ -959,17 +1128,14 @@ module.exports = loda = {
   'install': install,
 
   'arity': arity,
-  'call': call,
+  'call': curry(call),
   'apply': curry(apply, 2),
   'curry': curry,
-  'curryRight': curryRight,
   'isCurried': isCurried,
   'compose': compose,
-  'composeRight': composeRight,
   'partial': partial,
-  'partialRight': partialRight,
-  'functionize': functionize,
-  'methodize': methodize,
+  'decontextify': decontextify,
+  'contextify': contextify,
   'complement': complement,
   'flip': flip,
   'juxt': juxt,
@@ -979,13 +1145,14 @@ module.exports = loda = {
   'isMemoized': isMemoized,
   'clearMemo': clearMemo,
 
-  'makeIterable': makeIterable,
-  'iterator': iterator,
+  'iterable': _iterable,
+  'iterator': _iterator,
+  'isIterable': isIterable,
 
   'array': array,
   'object': object,
   'string': string,
-  'doall': curry(doall),
+  'doall': curry(doall, 2),
 
   'isEmpty': isEmpty,
   'count': count,
@@ -995,6 +1162,7 @@ module.exports = loda = {
   'zip': curry(zip, 2),
   'flatten': flatten,
   'memoIterable': memoIterable,
+  'join': join,
   'reduce': curry(reduce, 2),
   'reduced': reduced,
   'compare': curry(compare, 2),
@@ -1003,7 +1171,7 @@ module.exports = loda = {
 
   'id': id,
   'tuple': tuple,
-  'hold': hold,
+  'pipe': pipe,
 
   'get': get,
 
@@ -1022,4 +1190,11 @@ module.exports = loda = {
   'lteq': lteq,
   'gt': gt,
   'gteq': gteq,
+
+  'fmap': curry(fmap),
+  'fapply': curry(fapply),
+  'fof': curry(fof),
+  'fbind': curry(fbind),
+
+  'Maybe': Maybe,
 }
