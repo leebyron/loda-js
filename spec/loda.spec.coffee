@@ -329,21 +329,23 @@ describe 'loda', ->
     it 'returns a curried function if given a curried function', ->
       spy = jasmine.createSpy().andCallFake add
       spyAdd = curry (a, b) -> spy a, b
-      memoized = memo spyAdd
-      expect(isCurried memoized).toBe true
+      memoizedAdd = memo spyAdd
+      expect(isCurried memoizedAdd).toBe true
 
-      add1 = spyAdd 1
+      add1 = memoizedAdd 1
       expect(spy).not.toHaveBeenCalled()
       expect(add1 1).toBe 2
+      expect(add1 1).toBe 2
+      expect(add1 1).toBe 2
       expect(spy).toHaveBeenCalledWith 1, 1
+      expect(spy.calls.length).toBe 1
 
-      #      BROKEN!
-      # spy.reset()
-      # anotherAdd1 = spyAdd 1
-      # expect(anotherAdd1).not.toBe add1
-      # expect(spy).not.toHaveBeenCalled()
-      # expect(anotherAdd1 1).toBe 2
-      # expect(spy).not.toHaveBeenCalled()
+      anotherAdd1 = memoizedAdd 1
+      expect(anotherAdd1).not.toBe add1
+      expect(anotherAdd1 1).toBe 2
+      expect(anotherAdd1 1).toBe 2
+      expect(anotherAdd1 1).toBe 2
+      expect(spy.calls.length).toBe 1
 
     it 'is idempotent', ->
       memoized = memo add
