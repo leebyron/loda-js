@@ -485,18 +485,6 @@ IndexedIterator.prototype.next = function() {
 }
 
 
-// function indexedIterable(indexed) {
-//   return new LodaIterable(function() {
-//     var ii = 0;
-//     return function () {
-//       if (ii === indexed.length) {
-//         return ITERATOR_DONE;
-//       }
-//       return _iteratorValue(indexed[ii++]);
-//     };
-//   });
-// }
-
 function keyedIterable(keyed) {
   return new LodaIterable(function() {
     var ii = 0;
@@ -681,38 +669,6 @@ function map(fn, iterable) {
     }
   });
 }
-
-// function mapx(fn, iterable) {
-//   return new MapIterable(fn, iterable);
-//   // return new LodaIterable(function () {
-//   //   var iter = _iterator(iterable);
-//   //   return function () {
-//   //     var step = iter.next();
-//   //     if (step.done !== false) return step;
-//   //     return _iteratorValue(fn(step.value));
-//   //   }
-//   // });
-// }
-
-// function MapIterable(mapper, iterable) {
-//   this.mapper = mapper;
-//   this.iterable = iterable;
-// }
-// MapIterable.prototype = Object.create(LodaIterable.prototype);
-// MapIterable.prototype[ITERATOR_SYMBOL] = function() {
-//   return new MapIterator(this.mapper, _iterator(this.iterable))
-// }
-
-// function MapIterator(mapper, _iterator) {
-//   this.mapper = mapper;
-//   this._iterator = _iterator;
-// }
-// MapIterator.prototype = Object.create(LodaIterator.prototype);
-// MapIterator.prototype.next = function() {
-//   var step = this._iterator.next();
-//   if (step.done !== false) return step;
-//   return _iteratorValue(this.mapper.call(null, step.value));
-// }
 
 
 /**
@@ -1108,9 +1064,6 @@ Maybe.None = MaybeNone;
 
 
 
-
-
-
 /**
  * Internal helper methods
  */
@@ -1210,7 +1163,6 @@ module.exports = loda = {
   'take': curry(take, 2),
   'filter': curry(filter, 2),
   'map': curry(map, 2),
-  // 'mapx': mapx,
   'zip': curry(zip, 2),
   'flatten': flatten,
   'memoIterable': memoIterable,
