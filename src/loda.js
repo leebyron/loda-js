@@ -976,6 +976,19 @@ function fbind(fn, monad) {
   throw new Error('Value provided is not Monad: ' + monad);
 }
 
+function fpipe(monad) {
+  return function(fn) {
+    var result = monad;
+    for (var ii = 0; ii < arguments.length; ii++) {
+      result = fbind(arguments[ii], result);
+    }
+    return result;
+  }
+}
+
+
+
+
 /**
  * Maybe
  */
@@ -1195,6 +1208,7 @@ module.exports = loda = {
   'fapply': curry(fapply),
   'fof': curry(fof),
   'fbind': curry(fbind),
+  'fpipe': fpipe,
 
   'Maybe': Maybe,
 }

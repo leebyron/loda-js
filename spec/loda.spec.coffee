@@ -1180,6 +1180,19 @@ describe 'loda', ->
                   fbind(doubleOrDie, Maybe 1))))
           ).toBe 'die'
 
+        it 'can chain binds using fpipe', ->
+          doubleOrDie = (x) -> Maybe( x * 2 if x < 8 )
+          pipeMaybe1 = fpipe Maybe 1
+          expect(Maybe.or 'die',
+            pipeMaybe1 doubleOrDie
+          ).toBe 2
+          expect(Maybe.or 'die',
+            pipeMaybe1 doubleOrDie, doubleOrDie, doubleOrDie
+          ).toBe 8
+          expect(Maybe.or 'die',
+            pipeMaybe1 doubleOrDie, doubleOrDie, doubleOrDie, doubleOrDie
+          ).toBe 'die'
+
         it 'has associativity', ->
           f = (x) -> Maybe( x * 2 if x < 8 )
           g = (x) -> Maybe( x - 10 if x > 10 )
