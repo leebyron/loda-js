@@ -1009,9 +1009,13 @@ describe 'loda', ->
           some = Maybe.Value 'abc'
           none = Maybe.None
           expect(Maybe.is maybeValue).toBe true
+          expect(maybeValue.is()).toBe true
           expect(Maybe.is maybeNone).toBe false
+          expect(maybeNone.is()).toBe false
           expect(Maybe.is some).toBe true
+          expect(some.is()).toBe true
           expect(Maybe.is none).toBe false
+          expect(none.is()).toBe false
 
       describe 'force', ->
 
@@ -1019,7 +1023,9 @@ describe 'loda', ->
           some = Maybe.Value 'abc'
           none = Maybe.None
           expect(Maybe.force some).toEqual 'abc'
+          expect(some.force()).toEqual 'abc'
           expect(-> Maybe.force none).toThrow()
+          expect(-> none.force()).toThrow()
 
       describe 'or', ->
 
@@ -1027,7 +1033,9 @@ describe 'loda', ->
           some = Maybe.Value 'abc'
           none = Maybe.None
           expect(Maybe.or '123', some).toEqual 'abc'
+          expect(some.or '123').toEqual 'abc'
           expect(Maybe.or '123', none).toEqual '123'
+          expect(none.or '123').toEqual '123'
 
         it 'is curried', ->
           or123 = Maybe.or '123'
@@ -1049,6 +1057,7 @@ describe 'loda', ->
         it 'has reflexivity', ->
           a = Maybe 1
           expect(eq a, a).toBe true
+          expect(a.equals a).toBe true
 
         it 'has symmetry', ->
           a = Maybe 1

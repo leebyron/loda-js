@@ -1006,16 +1006,13 @@ function Maybe(value) {
 Maybe.of = Maybe;
 Maybe.prototype.of = Maybe;
 Maybe.is = function (maybe) {
-  return maybe instanceof MaybeValue;
+  return maybe.is();
 };
 Maybe.force = function (maybe) {
-  if (maybe instanceof MaybeValue) {
-    return maybe._value;
-  }
-  throw new Error('Cannot force non-Value: ' + maybe);
+  return maybe.force();
 };
-Maybe.or = curry(function (defaultValue, maybe) {
-  return maybe instanceof MaybeValue ? maybe._value : defaultValue;
+Maybe.or = curry(function (fallback, maybe) {
+  return maybe.or(fallback);
 });
 
 function MaybeValue(value) {
@@ -1031,14 +1028,23 @@ MaybeValue.prototype.toSource =
 MaybeValue.prototype.inspect = function() {
   return 'Maybe.Value ' + this._value;
 }
+MaybeValue.prototype.is = function() {
+  return true;
+}
+MaybeValue.prototype.or = function(fallback) {
+  return this._value;
+}
+MaybeValue.prototype.force = function() {
+  return this._value;
+}
 MaybeValue.prototype.equals = function(maybe) {
-  return maybe instanceof MaybeValue && eq2(this._value, maybe._value);
+  return maybe.is() && eq2(this._value, maybe._value);
 }
 MaybeValue.prototype.map = function(fn) {
-  return new MaybeValue(fn(this._value));
+  return this.of(fn(this._value));
 }
 MaybeValue.prototype.ap = function(maybe) {
-  return fmap(this._value, maybe);
+  return maybe.map(this._value);
 }
 MaybeValue.prototype.chain = function(fn) {
   return fn(this._value);
@@ -1056,6 +1062,15 @@ MaybeNone.prototype.toString =
 MaybeNone.prototype.toSource =
 MaybeNone.prototype.inspect = function() {
   return 'Maybe.None';
+}
+MaybeNone.prototype.is = function() {
+  return false;
+}
+MaybeNone.prototype.or = function(fallback) {
+  return fallback;
+}
+MaybeNone.prototype.force = function() {
+  throw new Error('Cannot force a value from None.');
 }
 MaybeNone.prototype.equals = function(maybe) {
   return maybe === MaybeNone;
