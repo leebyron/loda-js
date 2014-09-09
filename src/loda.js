@@ -1173,16 +1173,6 @@ var curriedPushIn = curry(pushIn);
 
 
 
-function fpipe(monad) {
-  return function(fn) {
-    var result = monad;
-    for (var ii = 0; ii < arguments.length; ii++) {
-      result = bind(arguments[ii], result);
-    }
-    return result;
-  }
-}
-
 function liftResult(fn, promise) {
   return bindResult(function (a) { return pure(promise, fn(a)); }, promise);
 }
@@ -1643,10 +1633,8 @@ module.exports = loda = {
 
   'pure': curry(pure),
   'bind': curry(bind),
-
-  'fpipe': fpipe,
-
   'lift': curry(lift, 2),
+
   'applyM': curry(applyM, 2),
   'reduceM': curry(reduceM, 2),
   'filterM': curry(filterM, 2),
