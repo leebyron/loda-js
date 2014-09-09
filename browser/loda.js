@@ -1233,7 +1233,6 @@ function promise(fn) {
   // Hey, this looks a lot like bind...
   return new Promise(function (succeed, fail) {
     fn(function (value) {
-      console.log('resolved ' + value);
       value instanceof Maybe || (value = Maybe(value));
       value.is() ?
         succeed(value.get()) :
