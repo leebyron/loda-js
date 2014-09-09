@@ -1103,25 +1103,25 @@ describe 'loda', ->
 
       describe 'functor', ->
 
-        it 'can be provided to mapM', ->
+        it 'can be provided to lift', ->
           inc = add 1
           m1 = Maybe.Value 3
           expect(inc m1).not.toEqual 4
-          m2 = mapM inc, m1
+          m2 = lift inc, m1
           expect(Maybe.get m2).toBe 4
 
         it 'safely carries Maybe.None through calls', ->
-          inc = mapM add 1
+          inc = lift add 1
           spy = jasmine.createSpy()
           m1 = Maybe.None
           m2 = inc m1
-          m3 = mapM spy, m2
+          m3 = lift spy, m2
           expect(spy).not.toHaveBeenCalled()
           expect(Maybe.is m3).toBe false
 
         it 'has identity', ->
           a = Maybe 1
-          b = mapM id, a
+          b = lift id, a
           expect(eq a, b).toBe true
 
         it 'has composition', ->
@@ -1129,8 +1129,8 @@ describe 'loda', ->
           f = add 1
           g = mul 2
           expect(eq(
-            mapM(((x) -> f(g(x))), a),
-            mapM(f, mapM(g, a))
+            lift(((x) -> f(g(x))), a),
+            lift(f, lift(g, a))
           )).toBe true
 
       describe 'apply', ->
@@ -1148,16 +1148,16 @@ describe 'loda', ->
           expect(Maybe.or 'nuthin', sumC).toBe 'nuthin'
           expect(Maybe.isError sumC).toBe true
 
-        it 'mapM of a curried function results in a maybe function', ->
+        it 'lift of a curried function results in a maybe function', ->
           a = Maybe 1
           b = Maybe 3
           c = Maybe null
-          addAMaybe = mapM add, a
+          addAMaybe = lift add, a
           sumAB = applyM addAMaybe, b
           expect(Maybe.or 'nuthin', sumAB).toBe 4
           sumAC = applyM addAMaybe, c
           expect(Maybe.or 'nuthin', sumAC).toBe 'nuthin'
-          addCMaybe = mapM add, c
+          addCMaybe = lift add, c
           sumCB = applyM addCMaybe, b
           expect(addCMaybe).toBe Maybe.None
           expect(Maybe.or 'nuthin', sumCB).toBe 'nuthin'
@@ -1167,7 +1167,7 @@ describe 'loda', ->
           t = Maybe mul 3
           v = Maybe 10
           expect(eq(
-            applyM(applyM(mapM(((f) -> (g) -> (x) -> f(g(x))), s), t), v),
+            applyM(applyM(lift(((f) -> (g) -> (x) -> f(g(x))), s), t), v),
             applyM(s, applyM(t, v))
           )).toBe true
 
@@ -1274,7 +1274,7 @@ describe 'loda', ->
 
 # p = new Promise(function (uh, oh) {oh('crap')})
 # Promise {[[PromiseStatus]]: "rejected", [[PromiseValue]]: "crap"}
-# mapM(mapM(function (x) { return x + x; }), p).then(function (x) {
+# lift(lift(function (x) { return x + x; }), p).then(function (x) {
 #  console.log('got', x); }).catch(function (e) { console.log('error', e); })
 # VM1771:2 error crap
 # Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
@@ -1282,8 +1282,8 @@ describe 'loda', ->
 
 # q = new Promise(function (uh, oh) {uh('hi')})
 # Promise {[[PromiseStatus]]: "resolved", [[PromiseValue]]: "hi"}
-# r = mapM(function (maybeFn) {
-#  return applyM(Maybe(3), maybeFn);}, mapM(mapM(add), q))
+# r = lift(function (maybeFn) {
+#  return applyM(Maybe(3), maybeFn);}, lift(lift(add), q))
 # Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
 # r.then(function(){console.log('yes', arguments);},
 #   function(e){console.log('no', e, e.stack);})

@@ -70,7 +70,13 @@ function apply(fn, argList, thisArg) {
     }
     argList = array(argList);
   }
-  return fn.apply(thisArg || this, argList);
+  if (typeof fn === 'function') {
+    return fn.apply(thisArg || this, argList);
+  }
+  if (isIterable(fn)) {
+    return array(applyM(fn, argList));
+  }
+  throw new TypeError('Invalid function: ' + fn);
 }
 
 
@@ -172,7 +178,10 @@ function makeCurryRightFn(arity) {
 /**
  * Composition
  */
-
+// TODO: if you compose curried functions together, sum the lengths and return a
+// curried function of the total length.
+// If any function "upstream" is curried and has a length > 1, apply arguments to
+// it first.
 function compose() {
   var fns = arguments;
   var numFns = fns.length;
@@ -298,7 +307,9 @@ function flip(fn) {
  *     map(juxt(get('uid'), id), [ { uid: 'abc' }, { uid: 'xyz' } ])
  *     // { abc: { uid: 'abc' }, xyz: { uid: 'xyz' } }
  *
+ * juxt(add(1), add(2))(10) is equivalent to apply([add(1), add(2)], [10])
  */
+// ...Array<(x: T): S> -> T -> S[]
 function juxt(/* ... */) {
   var fns = arguments;
   var numFns = fns.length;
@@ -311,6 +322,29 @@ function juxt(/* ... */) {
   });
 }
 
+// ...Array<(x: T): Monad<S>> -> T -> Monad<S[]>
+function juxtM(/* ... */) {
+  var fns = new Array(arguments.length); for (var $_i = 0; $_i < arguments.length; ++$_i) fns[$_i] = arguments[$_i];
+  return function(/* ... */) {
+    var args = new Array(arguments.length); for (var $_i = 0; $_i < arguments.length; ++$_i) args[$_i] = arguments[$_i];
+    return applyJuxtM(fns, args, 0, null);
+  }
+}
+
+function applyJuxtM(fns, args, index, monadType) {
+  if (index >= fns.length) {
+    return pure(monadType, []);
+  }
+  var fn = fns[index];
+  var resultMonad = fn.apply(null, args);
+  return bind(function (result) {
+    return lift(function (list) {
+      return list.length ? [result].concat(list) : [result];
+    }, applyJuxtM(fns, args, index + 1, resultMonad));
+  }, resultMonad);
+}
+
+
 /**
  * Returns a function which when called will apply each provided argument to the
  * corresponding function provided to knit. Example:
@@ -319,7 +353,6 @@ function juxt(/* ... */) {
  *     example([10, 20])  // [11, 19]
  *
  * `knit` can be useful when mapping over key-value pairs such as objects.
- * .
  *
  *    map(knit(id, neg), { a: 1, b: 2, c: 3 }) // { a: -1, b: -2, c: -3 }
  *
@@ -502,6 +535,17 @@ function _iteratorValue(value) {
   return ITERATOR_VALUE;
 }
 
+function index(iterable) {
+  return new LodaIterable(function() {
+    var ii = 0;
+    var iter = _iterator(iterable);
+    return function () {
+      var step = iter.next();
+      if (step.done !== false) return ITERATOR_DONE;
+      return _iteratorValue([ii++, step.value]);
+    };
+  });
+}
 
 
 
@@ -659,6 +703,10 @@ function map(fn, iterable) {
       return _iteratorValue(fn.apply(null, argArray));
     }
   });
+}
+
+function mapVal(fn, iterable) {
+  return map(knit(id, fn), iterable)
 }
 
 /**
@@ -819,6 +867,7 @@ function reduce(fn) {
 /**
  * Reduced
  */
+// TODO: make this a function and have Maybe.None and Maybe.Error return true.
 function reduced(value) {
   REDUCED.value = value;
   return REDUCED;
@@ -961,15 +1010,6 @@ function pipe() {
 
 
 
-/**
- * Indexed
- * -------
- */
-
-var get = curry(function (key, indexed) {
-  return indexed[key];
-});
-
 
 
 /**
@@ -1045,7 +1085,9 @@ var gteq = curryRight(argComparer(function (x, y) {
 // TODO: even if fn isn't curried, but it's length is > 1, it might still be
 //       the right thing to return an Apply
 // TODO: accept multiple args are do the apply chaining for us
-function mapM(fn, functor) {
+
+// lift :: (a -> b) -> M a -> M b
+function lift(fn, functor) {
   if (isCurried(fn) && fn.length > 1 && functor.chain) {
     return bind(function (value) {
       return pure(functor, curry(partial(uncurry(fn), value), fn.length - 1));
@@ -1074,7 +1116,7 @@ function applyM(appFn, appVal) {
   }
   // is Chain, Promise, or Iterable
   if (appFn.chain || appFn.then || isIterable(appFn)) {
-    return bind(function (fn) { return mapM(fn, appVal); }, appFn);
+    return bind(function (fn) { return lift(fn, appVal); }, appFn);
   }
   throw new Error('Value provided is not Apply: ' + appFn);
 }
@@ -1083,12 +1125,14 @@ function applyM(appFn, appVal) {
 // pure :: Promise<any> -> Maybe<V> -> Promise<V>
 // pure :: Promise<any> -> V -> Promise<V>
 function pure(applicative, value) {
-  if (applicative.then ||
-      (typeof Promise === 'function' && Promise === applicative)) { // is Promise
-    value instanceof Maybe || (value = Maybe(value));
+  if (applicative.then) {
+    applicative = applicative.constructor;
+  }
+  if (applicative.resolve && applicative.reject) { // is Promise
+    value instanceof Maybe || (value = Maybe(value)); // TODO: Maybe idempotent
     return value.is() ?
-      Promise.resolve(value.get()) :
-      Promise.reject(value.isError() && value.getError());
+      applicative.resolve(value.get()) :
+      applicative.reject(value.isError() && value.getError());
   }
   if (applicative.of) { // is Applicative
     return applicative.of(value);
@@ -1113,6 +1157,26 @@ function bind(fn, monad) {
   throw new Error('Value provided is not Monad: ' + monad);
 }
 
+// sequence :: Monad m => [m a] -> m [a]
+function arrayM(monadList, monadType) {
+  var iter = _iterator(monadList);
+  var step = iter.next();
+  if (step.done !== false) {
+    return monadType ? pure(monadType, []) : [];
+  }
+  var list = pure(step.value, []);
+  while (true) {
+    list = applyM(lift(curriedPushIn, list), step.value);
+    step = iter.next();
+    if (step.done !== false) return list;
+  }
+}
+
+var curriedPushIn = curry(pushIn);
+
+
+
+
 function fpipe(monad) {
   return function(fn) {
     var result = monad;
@@ -1123,7 +1187,7 @@ function fpipe(monad) {
   }
 }
 
-function mapMResult(fn, promise) {
+function liftResult(fn, promise) {
   return bindResult(function (a) { return pure(promise, fn(a)); }, promise);
 }
 
@@ -1140,7 +1204,7 @@ function bindResult(fn, promise) {
 // :: (Monad joinable) => joinable<joinable<T>> -> joinable<T>
 function joinM(joinable) {
   if (joinable.then) {
-    // Promise joins itself.
+    // Promise/A+ joins itself.
     return joinable;
     // return bind(function (result) {
     //   return result.then ? result : pure(joinable, result);
@@ -1159,6 +1223,14 @@ function joinM(joinable) {
 // :: (Monad m) => (T -> M<boolean>) -> T[] -> M<T[]>
 // optionally provide a monad instance or class as the third argument
 // to handle the empty-list, otherwise we will call predicate() with no args.
+
+// TODO: this implementation results in each dequeue of the iterator happening
+// once the previous bind has executed. For promises, this results in a serial
+// execution order. This behavior may want to be preserved, but it should
+// probably not be the default. See mapM and arrayM as examples of where
+// optimistic dequeuing of the iteration results in parallel execution of
+// promises. The other *M methods may be vulnerable to this slow-down...
+
 function filterM(predicate, iterable, monadType) {
   return filterMDeep(predicate, array(iterable), 0, monadType);
 }
@@ -1170,12 +1242,24 @@ function filterMDeep(predicate, array, index, monadType) {
   var value = array[index];
   var passMonad = predicate(value);
   return bind(function (pass) {
-    return mapM(function (list) {
+    return lift(function (list) {
       return list.length ?
         pass ? [value].concat(list) : list :
         pass ? [value] : [];
     }, filterMDeep(predicate, array, index + 1, passMonad));
   }, passMonad);
+}
+
+
+// mapM :: Monad m => (a -> m b) -> [a] -> m [b]
+var mapM = compose(arrayM, map);
+
+function mapValM(fn, iterable) {
+  return arrayM(map(function (kv) {
+    var k = kv[0];
+    var v = kv[1];
+    return lift(partial(tuple, k), fn(v));
+  }, iterable));
 }
 
 
@@ -1193,14 +1277,14 @@ function filterMDeep(predicate, array, index, monadType) {
 //   var step = iter.next();
 //   if (step.done !== false) return result;
 //   result = predicate(step.value);
-//   result = mapM(function (passed) {
+//   result = lift(function (passed) {
 //     return passed ? [step.value] : [];
 //   }, result);
 
 //   while (true) {
 //     step = iter.next();
 //     if (step.done !== false) return result;
-//     result = mapM(function (passed) {
+//     result = lift(function (passed) {
 //       return
 //     }, predicate(step.value));
 //   }
@@ -1209,16 +1293,15 @@ function filterMDeep(predicate, array, index, monadType) {
 // :: (Monad M) => (T -> T -> M<T>) -> T[] -> M<T>
 // :: (Monad M) => (T -> S -> M<T>) -> T -> S[] -> M<T>
 // TODO: broken when Monad is a list? should not get first iteration before
-function reduceM(reducer, iterable) {
-  var initial, iter;
-  if (arguments.length === 3) {
-    iter = _iterator(arguments[2]);
-    initial = arguments[1];
-  } else {
-    iter = _iterator(arguments[1]);
-    initial = iter.next().value;
-  }
+// Empty list calls reducer with undefined?
+// Note: This implies sequentialy resolving Monads. If using Promises, they will
+// execute in sequence.
+function reduceM(reducer, initial, iterable) {
+  var iter = _iterator(iterable);
   var step = iter.next(); // TODO: empty lists?
+  if (step.done !== false) {
+    return reducer(initial);
+  }
   var reduced = reducer(initial, step.value);
   while (true) {
     step = iter.next();
@@ -1269,6 +1352,15 @@ Maybe.get = function (maybe) {
 Maybe.getError = function (maybe) {
   return maybe.getError();
 };
+Maybe['try'] = function(fn) { // TODO: handle curried fns
+  return arity(fn.length, function() {
+    try {
+      return Maybe(fn.apply(this, arguments));
+    } catch (error) {
+      return MaybeError(error);
+    }
+  });
+}
 
 Maybe.prototype.of = Maybe;
 Maybe.prototype.is =
@@ -1388,6 +1480,30 @@ Maybe.Error = MaybeError;
 
 
 /**
+ * Indexed
+ * -------
+ */
+
+var at = curry(Maybe['try'](function (key, indexed) {
+  return indexed[key];
+}));
+
+var has = curry(function (key, indexed) {
+  return indexed && indexed.hasOwnProperty(key);
+});
+
+var get = curry(function (key, indexed) {
+  var value = indexed[key];
+  if (value == null) {
+    throw new Error('No key "' + key + '" in indexed: ' + indexed);
+  }
+  return value;
+});
+
+
+
+
+/**
  * Internal helper methods
  */
 
@@ -1464,7 +1580,9 @@ module.exports = loda = {
   'contextify': contextify,
   'complement': complement,
   'flip': flip,
+
   'juxt': juxt,
+  'juxtM': juxtM,
   'knit': knit,
 
   'memo': memo,
@@ -1474,6 +1592,7 @@ module.exports = loda = {
   'iterable': _iterable,
   'iterator': _iterator,
   'isIterable': isIterable,
+  'index': index,
 
   'array': array,
   'object': object,
@@ -1485,6 +1604,7 @@ module.exports = loda = {
   'take': curry(take, 2),
   'filter': curry(filter, 2),
   'map': curry(map, 2),
+  'mapVal': curry(mapVal, 2),
   'zip': curry(zip, 2),
   'unzip': unzip, // TODO: test
   'concat': concat,
@@ -1503,6 +1623,8 @@ module.exports = loda = {
   'tuple': tuple,
   'pipe': pipe,
 
+  'at': at,
+  'has': has,
   'get': get,
 
   'add': add,
@@ -1528,14 +1650,17 @@ module.exports = loda = {
 
   'fpipe': fpipe,
 
-  'mapM': curry(mapM, 2),
+  'lift': curry(lift, 2),
   'applyM': curry(applyM, 2),
   'reduceM': curry(reduceM, 2),
   'filterM': curry(filterM, 2),
+  'mapM': curry(mapM, 2),
+  'mapValM': curry(mapValM, 2),
   'joinM': joinM,
+  'arrayM': arrayM,
 
   'promise': curry(promise),
-  'mapMResult': curry(mapMResult),
+  'liftResult': curry(liftResult),
   'bindResult': curry(bindResult),
 
 

@@ -135,4 +135,6 @@ runBenchmarks({
     },
 
   }
+}).catch(function (err) {
+  console.log('something went wrong', err, err.stack);
 });

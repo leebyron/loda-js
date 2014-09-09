@@ -1,20 +1,23 @@
-var async = require('async');
 var benchmark = require('benchmark');
-var exec = require('child_process').exec;
+var child = require('child_process');
 var pad = require('pad');
+var Promise = require('promise');
 var _ = require('../');
 
+var exec = Promise.denodeify(child.exec);
+
 function runBenchmarks(config) {
-  getLibraries(config.libraries, function (libs) {
-    _.doall(
-      console.log,
-      _.flatten(
-        _.map(
-          _.map(testResult),
-          mapTestSuites(libs, config.tests))));
-  });
+  return _.bind(
+    _.compose(
+      _.doall(console.log),
+      _.bind(_.map(testResult)),
+      mapTestSuites(config.tests)
+    ),
+    getLibraries(config.libraries)
+  )
 }
 
+// TODO: convert to Promise
 function testResult(test) {
   return test.name + '\n' +
     _.string(_.map(function (testResult) {
@@ -24,52 +27,32 @@ function testResult(test) {
     }, test.run()));
 }
 
-function getLibraries(libInfo, withLibs) {
-  async.map(
-    _.array(_.map(function (lib) {
-      return {
-        key: lib[0],
-        name: lib[1].name || lib[0],
-        version: lib[1].version
-      }
-    }, libInfo)),
-    function (dep, done) {
-      var module = requireMaybe(dep.name);
-      if (module) {
-        done(null, {
-          key: dep.key,
-          module: module
-        });
-      } else {
-        var npmName = dep.name + '@' + dep.version;
-        console.log('installing: ' + npmName + '\n');
-        exec('npm install ' + npmName, function () {
-          done(null, {
-            key: dep.key,
-            module: requireMaybe(dep.name)
-          });
-        })
-      }
-    },
-    function (err, result) {
-      _.pipe(result)(
-        _.map(_.juxt(_.get('key'), _.get('module'))),
-        _.filter(_.get(1)),
-        _.object,
-        withLibs
-      );
+function normalizeLibInfo(libInfo) {
+  return _.map(function (lib) {
+    return [lib[0], {
+      name: lib[1].name || lib[0],
+      version: lib[1].version
+    }]
+  }, libInfo);
+}
+
+function getLibraries(libInfo) {
+  return _.mapValM(function (dep) {
+    var module = requireMaybe(dep.name);
+    if (module.is()) {
+      return _.pure(Promise, module);
+    } else {
+      var npmName = dep.name + '@' + dep.version;
+      return _.bind(function (lols) {
+        return requireMaybe(dep.name);
+      }, exec('npm install ' + npmName));
     }
-  );
+  }, normalizeLibInfo(libInfo));
 }
 
-function requireMaybe(moduleName) {
-  try {
-    return require(moduleName);
-  } catch (error) {}
-  return null;
-}
+var requireMaybe = _.Maybe.try(require);
 
-function mapTestSuites(libs, tests) {
+var mapTestSuites = _.curry(function (tests, libs) {
   return _.map(function (test) {
     var testName = test[0];
     var testDetail = test[1];
@@ -88,6 +71,6 @@ function mapTestSuites(libs, tests) {
       }, new benchmark.Suite(testName + ' ' + variantName), libs);
     }, testDetail.variants || {'': []})
   }, tests);
-}
+});
 
 exports.runBenchmarks = runBenchmarks;
