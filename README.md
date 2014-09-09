@@ -1,8 +1,7 @@
-Use JavaScript functionally, you must!
+Use JavaScript functionally pure, you must!
 
-You must unlearn what you have learned.
-
-Core concepts:
+Core concepts
+-------------
 
   * Designed to be curried, all loda functions are. Last, most-significant
     arguments come. Yes, hmmm.
@@ -19,6 +18,16 @@ Core concepts:
   * Sequence comprehensions return unfulfilled Iterables. This makes them lazy,
     allowing for performant chained operations and allows them to reify to any
     Array, Object or any kind of data structure.
+
+  * Monads `Maybe` and `Promise` tackle two of Javascript's gnarliest problems:
+    error-handling and asyncronicity.
+
+
+Disclaimer
+----------
+
+Loda is totally experimental. No guarantees are made to it working correctly,
+however [specs/](./specs/) illustrates Loda's test coverage.
 
 
 Contribution

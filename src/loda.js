@@ -56,26 +56,17 @@ function makeArityFn(length) {
 
 
 /**
- * Call
- */
-
-function call(fn, maybeFunctor) {
-  if (arguments.length === 2 &&
-      maybeFunctor &&
-      typeof maybeFunctor.map === 'function') {
-    return maybeFunctor.map(fn);
-  }
-  var $_arguments = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) $_arguments[$_i - 1] = arguments[$_i];
-  return fn.apply(this, $_arguments);
-}
-
-
-/**
  * Apply
  */
-
-function apply(fn, argArray, thisArg) {
-  return fn.apply(thisArg || this, argArray);
+// TODO: test that iterable can be used as an argList
+function apply(fn, argList, thisArg) {
+  if (!isArray(argList)) {
+    if (!isIterable(argList)) {
+      throw new TypeError('Invalid argument list ' + argList);
+    }
+    argList = array(argList);
+  }
+  return fn.apply(thisArg || this, argList);
 }
 
 
@@ -211,7 +202,7 @@ function partial(fn) {
   if (arguments.length === 1) return fn;
   var partialArgs = selectArgs(arguments, 1);
   return arity(fn.length - partialArgs.length, function partialFn() {
-    return fn.apply(this, concat(partialArgs, arguments));
+    return fn.apply(this, concatArgs(partialArgs, arguments));
   });
 }
 
@@ -221,7 +212,7 @@ function partialRight(fn) {
   if (arguments.length === 1) return fn;
   var partialArgs = selectArgs(arguments, 1);
   return arity(fn.length - partialArgs.length, function partialFn() {
-    return fn.apply(this, concat(arguments, partialArgs));
+    return fn.apply(this, concatArgs(arguments, partialArgs));
   })
 }
 
@@ -443,7 +434,7 @@ function isIterable(maybeIterable) {
 
 var ALT_ITERATOR_SYMBOL = '@@_iterator';
 var ITERATOR_SYMBOL =
-  typeof Symbol === 'function' ? Symbol._iterator : ALT_ITERATOR_SYMBOL;
+  typeof Symbol === 'function' ? Symbol.iterator : ALT_ITERATOR_SYMBOL;
 var ITERATOR_DONE = { done: true, value: undefined };
 var ITERATOR_VALUE = { done: false, value: undefined };
 
@@ -666,11 +657,38 @@ function map(fn, iterable) {
   });
 }
 
-
 /**
  * Zip
  */
 var zip = partial(map, tuple);
+var unzip = compose(partial(apply, zip), _iterable);
+
+/**
+ * Concat
+ */
+function concat(listOfLists) {
+  // TODO: write tests for this method
+  return new LodaIterable(function () {
+    var iter = _iterator(listOfLists);
+    var stack = [];
+    return function () {
+      while (iter) {
+        var step = iter.next();
+        if (step.done !== false) {
+          iter = stack.pop();
+        } else if (!stack.length) {
+          var value = step.value;
+          stack.push(iter);
+          iter = _iterator(value);
+        } else {
+          return step;
+        }
+      }
+      return ITERATOR_DONE;
+    }
+  });
+}
+
 
 /**
  * Flatten
@@ -697,14 +715,46 @@ function flatten(deepIterable) {
   });
 }
 
+/*
+
+TODO: infinite iterables?
+
+Infinite lists
+iterate :: (a -> a) -> a -> [a] Source
+
+iterate f x returns an infinite list of repeated applications of f to x:
+
+iterate f x == [x, f x, f (f x), ...]
+repeat :: a -> [a] Source
+
+repeat x is an infinite list, with x the value of every element.
+
+replicate :: Int -> a -> [a] Source
+
+replicate n x is a list of length n with x the value of every element. It is an instance of the more general genericReplicate, in which n may be of any integral type.
+
+cycle :: [a] -> [a] Source
+
+cycle ties a finite list into a circular one, or equivalently, the infinite repetition of the original list. It is the identity on infinite lists.
+
+
+
+*/
+
+
+
 /**
  * Memoize Iterable
  */
+// TODO: test idempotence
 function memoIterable(iterable) {
+  if (iterable instanceof MemoIterable) {
+    return iterable;
+  }
   var iter = _iterator(iterable);
   var cache = [];
   var cacheFilled;
-  return new LodaIterable(function () {
+  return new MemoIterable(function () {
     if (cacheFilled) {
       return _iterator(cache);
     }
@@ -719,6 +769,11 @@ function memoIterable(iterable) {
     }
   });
 }
+
+function MemoIterable(_iteratorFactory) {
+  LodaIterable.call(this, _iteratorFactory);
+}
+MemoIterable.prototype = Object.create(LodaIterable.prototype);
 
 /**
  * Join
@@ -766,6 +821,55 @@ function reduced(value) {
 }
 
 var REDUCED = { value : undefined };
+
+
+// TODO: mapAccumL :: (acc -> x -> (acc, y)) -> acc -> [x] -> (acc, [y])
+function accumulate(fn, value, iterable) {
+  var iter = _iterator(iterable);
+  var list = [];
+  while (true) {
+    var step = iter.next();
+    if (step.done !== false) return [value, list];
+    var accumulated = fn(value, step.value);
+    value = accumulated[0];
+    list.push(accumulated[1]);
+  }
+}
+
+// unfoldr :: (b -> Maybe (a, b)) -> b -> [a] Source
+function expand(fn, initialSeed) {
+  return new LodaIterable(function () {
+    var seed = initialSeed;
+    return function() {
+      var result = Maybe(fn(seed));
+      if (result.is()) {
+        var resultTuple = result.get();
+        seed = resultTuple[0];
+        return _iteratorValue(resultTuple[1]);
+      }
+      return ITERATOR_DONE;
+    }
+  });
+}
+
+
+
+/*
+
+TODO: un-reduce aka expand
+
+
+unfoldr :: (b -> Maybe (a, b)) -> b -> [a] Source
+
+The unfoldr function is a `dual' to foldr: while foldr reduces a list to a summary value, unfoldr builds a list from a seed value. The function takes the element and returns Nothing if it is done producing the list or returns Just (a,b), in which case, a is a prepended to the list and b is used as the next element in a recursive call. For example,
+
+iterate f == unfoldr (\x -> Just (x, f x))
+In some cases, unfoldr can undo a foldr operation:
+
+
+
+*/
+
 
 /**
  * Compare
@@ -934,44 +1038,73 @@ var gteq = curryRight(argComparer(function (x, y) {
  */
 
 // TODO: if value is just an iterator, use the list comprehension form.
-function fmap(fn, functor) {
+// TODO: even if fn isn't curried, but it's length is > 1, it might still be
+//       the right thing to return an Apply
+// TODO: accept multiple args are do the apply chaining for us
+function mapM(fn, functor) {
   if (isCurried(fn) && fn.length > 1 && functor.chain) {
-    return fbind(function (value) {
-      return fof(functor, curry(partial(uncurry(fn), value), fn.length - 1));
+    return bind(function (value) {
+      return pure(functor, curry(partial(uncurry(fn), value), fn.length - 1));
     }, functor);
   }
-  if (functor.map) { // is Functor
+  if (functor.map && !isArray(functor)) { // is Functor
     return functor.map(fn);
   }
   if (functor.ap) { // is Apply
-    return fapply(fof(functor, fn), functor);
+    return applyM(pure(functor, fn), functor);
   }
-  if (functor.chain && functor.of) { // is Monad
-    return fbind(function (a) { return fof(functor, fn(a)); }, functor);
+  if ((functor.chain && functor.of) || functor.then) { // is Monad
+    return bind(function (a) { return pure(functor, fn(a)); }, functor);
+  }
+  if (isIterable(functor)) { // is Iterable
+    return map(fn, functor);
   }
   throw new Error('Value provided is not Functor: ' + functor);
 }
 
 // TODO: handle curried case
-function fapply(appFn, appVal) {
+// AKA <*>
+function applyM(appFn, appVal) {
   if (appFn.ap) { // is Apply
     return appFn.ap(appVal);
-  } else if (appFn.chain) { // is Chain
-    return fbind(function (fn) { return fmap(fn, appVal); }, appFn);
+  }
+  // is Chain, Promise, or Iterable
+  if (appFn.chain || appFn.then || isIterable(appFn)) {
+    return bind(function (fn) { return mapM(fn, appVal); }, appFn);
   }
   throw new Error('Value provided is not Apply: ' + appFn);
 }
 
-function fof(applicative, value) {
+// pure :: A<any> -> V -> A<V>
+// pure :: Promise<any> -> Maybe<V> -> Promise<V>
+// pure :: Promise<any> -> V -> Promise<V>
+function pure(applicative, value) {
+  if (applicative.then ||
+      (typeof Promise === 'function' && Promise === applicative)) { // is Promise
+    value instanceof Maybe || (value = Maybe(value));
+    return value.is() ?
+      Promise.resolve(value.get()) :
+      Promise.reject(value.isError() && value.getError());
+  }
   if (applicative.of) { // is Applicative
     return applicative.of(value);
+  }
+  if (isIterable(applicative)) { // is Iterable
+    return [value];
   }
   throw new Error('Value provided is not Applicative: ' + applicative);
 }
 
-function fbind(fn, monad) {
+// TODO: accept multiple args and do the apply chaining for us
+function bind(fn, monad) {
   if (monad.chain) { // is Chain
     return monad.chain(fn);
+  }
+  if (monad.then) { // is Promise
+    return monad.then(fn);
+  }
+  if (isIterable(monad)) { // is Iterable
+    return concat(map(fn, monad));
   }
   throw new Error('Value provided is not Monad: ' + monad);
 }
@@ -980,12 +1113,130 @@ function fpipe(monad) {
   return function(fn) {
     var result = monad;
     for (var ii = 0; ii < arguments.length; ii++) {
-      result = fbind(arguments[ii], result);
+      result = bind(arguments[ii], result);
     }
     return result;
   }
 }
 
+function mapMResult(fn, promise) {
+  return bindResult(function (a) { return pure(promise, fn(a)); }, promise);
+}
+
+function bindResult(fn, promise) {
+  if (promise.then) { // is Promise
+    return promise.then(
+      function (success) { return fn(MaybeValue(success)); },
+      function (failure) { return fn(failure ? MaybeError(failure) : MaybeNone); }
+    );
+  }
+  throw new Error('Value provided is not Promise: ' + promise);
+}
+
+// :: (Monad joinable) => joinable<joinable<T>> -> joinable<T>
+function joinM(joinable) {
+  if (joinable.then) {
+    // Promise joins itself.
+    return joinable;
+    // return bind(function (result) {
+    //   return result.then ? result : pure(joinable, result);
+    // }, joinable);
+  }
+  if (joinable.join) {
+    return joinable.join();
+  }
+  if (isIterable(joinable)) {
+    var val = _iterator(joinable).next().value;
+    return isIterable(val) ? val : joinable;
+  }
+  throw new Error('Value provided is not Joinable: ' + joinable);
+}
+
+// :: (Monad m) => (T -> M<boolean>) -> T[] -> M<T[]>
+// optionally provide a monad instance or class as the third argument
+// to handle the empty-list, otherwise we will call predicate() with no args.
+function filterM(predicate, iterable, monadType) {
+  return filterMDeep(predicate, array(iterable), 0, monadType);
+}
+
+function filterMDeep(predicate, array, index, monadType) {
+  if (index >= array.length) {
+    return pure(monadType ? monadType : predicate(), []);
+  }
+  var value = array[index];
+  var passMonad = predicate(value);
+  return bind(function (pass) {
+    return mapM(function (list) {
+      return list.length ?
+        pass ? [value].concat(list) : list :
+        pass ? [value] : [];
+    }, filterMDeep(predicate, array, index + 1, passMonad));
+  }, passMonad);
+}
+
+
+// filterM p []       = return []
+// filterM p (x : xs) =
+//   do
+//     b  <- p x
+//     ys <- filterM p xs
+//     return (if b then (x : ys) else ys)
+
+
+// function ffilter(predicate, list) {
+//   var iter = iterator(list);
+//   var result;
+//   var step = iter.next();
+//   if (step.done !== false) return result;
+//   result = predicate(step.value);
+//   result = mapM(function (passed) {
+//     return passed ? [step.value] : [];
+//   }, result);
+
+//   while (true) {
+//     step = iter.next();
+//     if (step.done !== false) return result;
+//     result = mapM(function (passed) {
+//       return
+//     }, predicate(step.value));
+//   }
+// }
+
+// :: (Monad M) => (T -> T -> M<T>) -> T[] -> M<T>
+// :: (Monad M) => (T -> S -> M<T>) -> T -> S[] -> M<T>
+// TODO: broken when Monad is a list? should not get first iteration before
+function reduceM(reducer, iterable) {
+  var initial, iter;
+  if (arguments.length === 3) {
+    iter = _iterator(arguments[2]);
+    initial = arguments[1];
+  } else {
+    iter = _iterator(arguments[1]);
+    initial = iter.next().value;
+  }
+  var step = iter.next(); // TODO: empty lists?
+  var reduced = reducer(initial, step.value);
+  while (true) {
+    step = iter.next();
+    if (step.done !== false) return reduced;
+    reduced = bind(partialRight(reducer, step.value), reduced);
+  }
+}
+
+
+
+function promise(fn) {
+  // Hey, this looks a lot like bind...
+  return new Promise(function (succeed, fail) {
+    fn(function (value) {
+      console.log('resolved ' + value);
+      value instanceof Maybe || (value = Maybe(value));
+      value.is() ?
+        succeed(value.get()) :
+        fail(value.isError() && value.getError());
+    })
+  })
+}
 
 
 
@@ -993,23 +1244,49 @@ function fpipe(monad) {
  * Maybe
  */
 function Maybe(value) {
-  return value == null ?
-    MaybeNone :
-    value instanceof Maybe ?
-      value :
-      new MaybeValue(value);
+  return value == null || value !== value ? MaybeNone :
+    value instanceof Maybe ? value :
+    value instanceof Error ? new MaybeError(value) :
+    new MaybeValue(value);
 }
+
 Maybe.of = Maybe;
-Maybe.prototype.of = Maybe;
 Maybe.is = function (maybe) {
   return maybe.is();
 };
-Maybe.force = function (maybe) {
-  return maybe.force();
+Maybe.isError = function (maybe) {
+  return maybe.isError();
 };
 Maybe.or = curry(function (fallback, maybe) {
   return maybe.or(fallback);
 });
+Maybe.get = function (maybe) {
+  return maybe.get();
+};
+Maybe.getError = function (maybe) {
+  return maybe.getError();
+};
+
+Maybe.prototype.of = Maybe;
+Maybe.prototype.is =
+Maybe.prototype.isError = function() {
+  return false;
+}
+Maybe.prototype.or = function(fallback) {
+  return fallback;
+}
+Maybe.prototype.get = function() {
+  throw new Error('Cannot get a value from ' + this);
+}
+Maybe.prototype.getError = function() {
+  throw new Error('Cannot get an error from ' + this);
+}
+Maybe.prototype.join =
+Maybe.prototype.map =
+Maybe.prototype.ap =
+Maybe.prototype.chain = function(fn) {
+  return this;
+}
 
 function MaybeValue(value) {
   if (this instanceof MaybeValue) {
@@ -1030,11 +1307,14 @@ MaybeValue.prototype.is = function() {
 MaybeValue.prototype.or = function(fallback) {
   return this._value;
 }
-MaybeValue.prototype.force = function() {
+MaybeValue.prototype.get = function() {
   return this._value;
 }
 MaybeValue.prototype.equals = function(maybe) {
   return maybe.is() && eq2(this._value, maybe._value);
+}
+MaybeValue.prototype.join = function() {
+  return this._value instanceof Maybe ? this._value : this;
 }
 MaybeValue.prototype.map = function(fn) {
   return this.of(fn(this._value));
@@ -1059,22 +1339,11 @@ MaybeNone.prototype.toSource =
 MaybeNone.prototype.inspect = function() {
   return 'Maybe.None';
 }
-MaybeNone.prototype.is = function() {
-  return false;
-}
-MaybeNone.prototype.or = function(fallback) {
-  return fallback;
-}
-MaybeNone.prototype.force = function() {
-  throw new Error('Cannot force a value from None.');
-}
 MaybeNone.prototype.equals = function(maybe) {
   return maybe === MaybeNone;
 }
-MaybeNone.prototype.map =
-MaybeNone.prototype.ap =
-MaybeNone.prototype.chain = function(fn) {
-  return MaybeNone;
+MaybeNone.prototype.ap = function(maybe) {
+  return maybe.isError() ? maybe : MaybeNone;
 }
 MaybeNone.prototype[ITERATOR_SYMBOL] = function() {
   return EMPTY_ITERATOR;
@@ -1085,6 +1354,33 @@ var setPrototypeOf = Object.setPrototypeOf || function (obj, proto) {
 }
 setPrototypeOf(MaybeNone, MaybeNone.prototype);
 Maybe.None = MaybeNone;
+
+function MaybeError(error) {
+  if (this instanceof MaybeError) {
+    this._error = error;
+  } else {
+    return new MaybeError(error);
+  }
+}
+MaybeError.prototype = Object.create(Maybe.prototype);
+MaybeError.prototype.toString =
+MaybeError.prototype.toSource =
+MaybeError.prototype.inspect = function() {
+  return 'Maybe.Error ' + this._error;
+}
+MaybeError.prototype.isError = function() {
+  return true;
+}
+MaybeError.prototype.getError = function() {
+  return this._error;
+}
+MaybeError.prototype.equals = function(maybe) {
+  return maybe.isError() && eq2(this._error, maybe._error);
+}
+MaybeError.prototype[ITERATOR_SYMBOL] = function() {
+  return EMPTY_ITERATOR;
+}
+Maybe.Error = MaybeError;
 
 
 
@@ -1100,7 +1396,7 @@ function eq2(x, y) {
   return x === y || (x && x.equals && x.equals(y));
 }
 
-function concat(indexed1, indexed2) {
+function concatArgs(indexed1, indexed2) {
   var len1 = indexed1.length;
   var result = new Array(len1 + indexed2.length);
   for (var ii = 0; ii < len1; ii++) {
@@ -1156,7 +1452,6 @@ module.exports = loda = {
   'install': install,
 
   'arity': arity,
-  'call': curry(call),
   'apply': curry(apply, 2),
   'curry': curry,
   'isCurried': isCurried,
@@ -1188,11 +1483,15 @@ module.exports = loda = {
   'filter': curry(filter, 2),
   'map': curry(map, 2),
   'zip': curry(zip, 2),
+  'unzip': unzip, // TODO: test
+  'concat': concat,
   'flatten': flatten,
   'memoIterable': memoIterable,
   'join': join,
   'reduce': curry(reduce, 2),
   'reduced': reduced,
+  'accumulate': curry(accumulate),
+  'expand': curry(expand),
   'compare': curry(compare, 2),
   'every': curry(every, 2),
   'some': curry(some, 2),
@@ -1219,11 +1518,23 @@ module.exports = loda = {
   'gt': gt,
   'gteq': gteq,
 
-  'fmap': curry(fmap),
-  'fapply': curry(fapply),
-  'fof': curry(fof),
-  'fbind': curry(fbind),
+
+
+  'pure': curry(pure),
+  'bind': curry(bind),
+
   'fpipe': fpipe,
+
+  'mapM': curry(mapM, 2),
+  'applyM': curry(applyM, 2),
+  'reduceM': curry(reduceM, 2),
+  'filterM': curry(filterM, 2),
+  'joinM': joinM,
+
+  'promise': curry(promise),
+  'mapMResult': curry(mapMResult),
+  'bindResult': curry(bindResult),
+
 
   'Maybe': Maybe,
 }

@@ -36,19 +36,6 @@ describe 'loda', ->
         expect(fn1 'A', 'B', 'C').toBe 'A-B-C'
 
 
-    describe 'call', ->
-
-      it 'calls the function with all args', ->
-        spy = jasmine.createSpy()
-        call spy, 1, 2, 3
-        expect(spy).toHaveBeenCalledWith 1, 2, 3
-
-      it 'is curried', ->
-        spy = jasmine.createSpy()
-        spy2 = call spy
-        spy2 1, 2, 3
-        expect(spy).toHaveBeenCalledWith 1, 2, 3
-
 
     describe 'apply', ->
 
@@ -1006,43 +993,92 @@ describe 'loda', ->
         it 'checks if a Maybe is a Maybe.Value (has a value)', ->
           maybeValue = Maybe 'abc'
           maybeNone = Maybe null
+          maybeError = Maybe new Error 'error object'
           some = Maybe.Value 'abc'
           none = Maybe.None
-          expect(Maybe.is maybeValue).toBe true
-          expect(maybeValue.is()).toBe true
-          expect(Maybe.is maybeNone).toBe false
-          expect(maybeNone.is()).toBe false
-          expect(Maybe.is some).toBe true
-          expect(some.is()).toBe true
-          expect(Maybe.is none).toBe false
-          expect(none.is()).toBe false
+          error = Maybe.Error 'raw text error'
 
-      describe 'force', ->
+          expect(Maybe.is maybeValue).toBe true
+          expect(Maybe.is maybeNone).toBe false
+          expect(Maybe.is maybeError).toBe false
+          expect(Maybe.is some).toBe true
+          expect(Maybe.is none).toBe false
+          expect(Maybe.is error).toBe false
+
+          expect(maybeValue.is()).toBe true
+          expect(maybeNone.is()).toBe false
+          expect(maybeError.is()).toBe false
+          expect(some.is()).toBe true
+          expect(none.is()).toBe false
+          expect(error.is()).toBe false
+
+        it 'checks if a Maybe is a Maybe.Error (has an error)', ->
+          maybeValue = Maybe 'abc'
+          maybeNone = Maybe null
+          maybeError = Maybe new Error 'error object'
+          some = Maybe.Value 'abc'
+          none = Maybe.None
+          error = Maybe.Error 'raw text error'
+
+          expect(Maybe.isError maybeValue).toBe false
+          expect(Maybe.isError maybeNone).toBe false
+          expect(Maybe.isError maybeError).toBe true
+          expect(Maybe.isError some).toBe false
+          expect(Maybe.isError none).toBe false
+          expect(Maybe.isError error).toBe true
+
+          expect(maybeValue.isError()).toBe false
+          expect(maybeNone.isError()).toBe false
+          expect(maybeError.isError()).toBe true
+          expect(some.isError()).toBe false
+          expect(none.isError()).toBe false
+          expect(error.isError()).toBe true
+
+      describe 'get', ->
 
         it 'returns the contained value or throws', ->
           some = Maybe.Value 'abc'
           none = Maybe.None
-          expect(Maybe.force some).toEqual 'abc'
-          expect(some.force()).toEqual 'abc'
-          expect(-> Maybe.force none).toThrow()
-          expect(-> none.force()).toThrow()
+          error = Maybe.Error 'fatal'
+          expect(Maybe.get some).toEqual 'abc'
+          expect(some.get()).toEqual 'abc'
+          expect(-> Maybe.get none).toThrow()
+          expect(-> none.get()).toThrow()
+          expect(-> Maybe.get error).toThrow()
+          expect(-> error.get()).toThrow()
+
+        it 'returns the contained error or throws', ->
+          some = Maybe.Value 'abc'
+          none = Maybe.None
+          error = Maybe.Error 'fatal'
+          expect(-> Maybe.getError some).toThrow()
+          expect(-> some.getError()).toThrow()
+          expect(-> Maybe.getError none).toThrow()
+          expect(-> none.getError()).toThrow()
+          expect(Maybe.getError error).toEqual 'fatal'
+          expect(error.getError()).toEqual 'fatal'
 
       describe 'or', ->
 
         it 'returns a value', ->
           some = Maybe.Value 'abc'
           none = Maybe.None
+          error = Maybe.Error 'fatal'
           expect(Maybe.or '123', some).toEqual 'abc'
           expect(some.or '123').toEqual 'abc'
           expect(Maybe.or '123', none).toEqual '123'
           expect(none.or '123').toEqual '123'
+          expect(Maybe.or '123', error).toEqual '123'
+          expect(error.or '123').toEqual '123'
 
         it 'is curried', ->
           or123 = Maybe.or '123'
           some = Maybe.Value 'abc'
           none = Maybe.None
+          error = Maybe.Error 'fatal'
           expect(or123 some).toEqual 'abc'
           expect(or123 none).toEqual '123'
+          expect(or123 error).toEqual '123'
 
       describe 'behaves as a list of one', ->
 
@@ -1067,25 +1103,25 @@ describe 'loda', ->
 
       describe 'functor', ->
 
-        it 'can be provided to fmap', ->
+        it 'can be provided to mapM', ->
           inc = add 1
           m1 = Maybe.Value 3
           expect(inc m1).not.toEqual 4
-          m2 = fmap inc, m1
-          expect(Maybe.force m2).toBe 4
+          m2 = mapM inc, m1
+          expect(Maybe.get m2).toBe 4
 
         it 'safely carries Maybe.None through calls', ->
-          inc = fmap add 1
+          inc = mapM add 1
           spy = jasmine.createSpy()
           m1 = Maybe.None
           m2 = inc m1
-          m3 = fmap spy, m2
+          m3 = mapM spy, m2
           expect(spy).not.toHaveBeenCalled()
           expect(Maybe.is m3).toBe false
 
         it 'has identity', ->
           a = Maybe 1
-          b = fmap id, a
+          b = mapM id, a
           expect(eq a, b).toBe true
 
         it 'has composition', ->
@@ -1093,8 +1129,8 @@ describe 'loda', ->
           f = add 1
           g = mul 2
           expect(eq(
-            fmap(((x) -> f(g(x))), a),
-            fmap(f, fmap(g, a))
+            mapM(((x) -> f(g(x))), a),
+            mapM(f, mapM(g, a))
           )).toBe true
 
       describe 'apply', ->
@@ -1102,23 +1138,27 @@ describe 'loda', ->
         it 'applies a Maybe(fn) to a Maybe(val) to return a Maybe(result)', ->
           a = Maybe 1
           b = Maybe null
+          c = Maybe new Error 'fatal'
           add3Maybe = Maybe add 3
-          sumA = fapply add3Maybe, a
-          sumB = fapply add3Maybe, b
+          sumA = applyM add3Maybe, a
+          sumB = applyM add3Maybe, b
+          sumC = applyM add3Maybe, c
           expect(Maybe.or 'nuthin', sumA).toBe 4
           expect(Maybe.or 'nuthin', sumB).toBe 'nuthin'
+          expect(Maybe.or 'nuthin', sumC).toBe 'nuthin'
+          expect(Maybe.isError sumC).toBe true
 
-        it 'fmap of a curried function results in a maybe function', ->
+        it 'mapM of a curried function results in a maybe function', ->
           a = Maybe 1
           b = Maybe 3
           c = Maybe null
-          addAMaybe = fmap add, a
-          sumAB = fapply addAMaybe, b
+          addAMaybe = mapM add, a
+          sumAB = applyM addAMaybe, b
           expect(Maybe.or 'nuthin', sumAB).toBe 4
-          sumAC = fapply addAMaybe, c
+          sumAC = applyM addAMaybe, c
           expect(Maybe.or 'nuthin', sumAC).toBe 'nuthin'
-          addCMaybe = fmap add, c
-          sumCB = fapply addCMaybe, b
+          addCMaybe = mapM add, c
+          sumCB = applyM addCMaybe, b
           expect(addCMaybe).toBe Maybe.None
           expect(Maybe.or 'nuthin', sumCB).toBe 'nuthin'
 
@@ -1127,22 +1167,22 @@ describe 'loda', ->
           t = Maybe mul 3
           v = Maybe 10
           expect(eq(
-            fapply(fapply(fmap(((f) -> (g) -> (x) -> f(g(x))), s), t), v),
-            fapply(s, fapply(t, v))
+            applyM(applyM(mapM(((f) -> (g) -> (x) -> f(g(x))), s), t), v),
+            applyM(s, applyM(t, v))
           )).toBe true
 
       describe 'applicative', ->
 
         it 'returns a new Maybe with the value', ->
           a = Maybe.None
-          b = fof(a, 3)
-          expect(Maybe.force b).toBe 3
+          b = pure(a, 3)
+          expect(Maybe.get b).toBe 3
 
         it 'has identity', ->
           a = Maybe
           v = Maybe 123
           expect(eq(
-            fapply(fof(a, id), v),
+            applyM(pure(a, id), v),
             v
           )).toBe true
 
@@ -1151,8 +1191,8 @@ describe 'loda', ->
           f = add 2
           x = 1
           expect(eq(
-            fapply(fof(a, f), fof(a, x)),
-            fof(a, f x)
+            applyM(pure(a, f), pure(a, x)),
+            pure(a, f x)
           )).toBe true
 
         it 'has interchange', ->
@@ -1160,8 +1200,8 @@ describe 'loda', ->
           u = Maybe mul 2
           x = 1
           expect(eq(
-            fapply(u, fof(a, x)),
-            fapply(fof(a, (f) -> f x), u)
+            applyM(u, pure(a, x)),
+            applyM(pure(a, (f) -> f x), u)
           )).toBe true
 
       describe 'chain / bind', ->
@@ -1170,23 +1210,23 @@ describe 'loda', ->
           toInt = (x) ->
             n = parseInt x
             unless isNaN(n) then Maybe n else Maybe.None
-          expect(Maybe.or 'nothin', fbind toInt, Maybe '123').toBe 123
-          expect(Maybe.or 'nothin', fbind toInt, Maybe 'abc').toBe 'nothin'
-          expect(Maybe.or 'nothin', fbind toInt, Maybe.None).toBe 'nothin'
+          expect(Maybe.or 'nothin', bind toInt, Maybe '123').toBe 123
+          expect(Maybe.or 'nothin', bind toInt, Maybe 'abc').toBe 'nothin'
+          expect(Maybe.or 'nothin', bind toInt, Maybe.None).toBe 'nothin'
 
         it 'can chain binds', ->
           doubleOrDie = (x) -> Maybe( x * 2 if x < 8 )
           expect(Maybe.or 'die',
-            fbind(doubleOrDie, Maybe 1)
+            bind(doubleOrDie, Maybe 1)
           ).toBe 2
           expect(Maybe.or 'die',
-            fbind(doubleOrDie, fbind(doubleOrDie, fbind(doubleOrDie, Maybe 1)))
+            bind(doubleOrDie, bind(doubleOrDie, bind(doubleOrDie, Maybe 1)))
           ).toBe 8
           expect(Maybe.or 'die',
-            fbind(doubleOrDie,
-              fbind(doubleOrDie,
-                fbind(doubleOrDie,
-                  fbind(doubleOrDie, Maybe 1))))
+            bind(doubleOrDie,
+              bind(doubleOrDie,
+                bind(doubleOrDie,
+                  bind(doubleOrDie, Maybe 1))))
           ).toBe 'die'
 
         it 'can chain binds using fpipe', ->
@@ -1207,8 +1247,8 @@ describe 'loda', ->
           g = (x) -> Maybe( x - 10 if x > 10 )
           m = Maybe 3
           expect(eq(
-            fbind(g, fbind(f, m)),
-            fbind(((x) -> fbind(g, f(x))), m)
+            bind(g, bind(f, m)),
+            bind(((x) -> bind(g, f(x))), m)
           )).toBe true
 
       describe 'monad', ->
@@ -1218,15 +1258,55 @@ describe 'loda', ->
           f = (x) -> Maybe x + 1
           a = 3
           expect(eq(
-            fbind(f, fof(m, a)),
+            bind(f, pure(m, a)),
             f(a)
           )).toBe true
 
         it 'has right identity', ->
           m = Maybe 3
           expect(eq(
-            fbind(fof(m), m),
+            bind(pure(m), m),
             m
           )).toBe true
 
 
+    describe 'Promise', ->
+
+# p = new Promise(function (uh, oh) {oh('crap')})
+# Promise {[[PromiseStatus]]: "rejected", [[PromiseValue]]: "crap"}
+# mapM(mapM(function (x) { return x + x; }), p).then(function (x) {
+#  console.log('got', x); }).catch(function (e) { console.log('error', e); })
+# VM1771:2 error crap
+# Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
+
+
+# q = new Promise(function (uh, oh) {uh('hi')})
+# Promise {[[PromiseStatus]]: "resolved", [[PromiseValue]]: "hi"}
+# r = mapM(function (maybeFn) {
+#  return applyM(Maybe(3), maybeFn);}, mapM(mapM(add), q))
+# Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
+# r.then(function(){console.log('yes', arguments);},
+#   function(e){console.log('no', e, e.stack);})
+# VM2197:2 yes ["hi3"]
+# Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
+
+
+
+
+# reducer = function(a, b) { return makePromise(function(resolve) {
+#  setTimeout(resolve, Math.random() * 1000, Maybe(a + b)); }) }
+# reduceM(reducer, [1,2,3,4,5,6]).then(function(v) { console.log('yay!', v); })
+# Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
+# loda.js:1094 resolved Maybe.Value 3
+# loda.js:1094 resolved Maybe.Value 6
+# loda.js:1094 resolved Maybe.Value 10
+# loda.js:1094 resolved Maybe.Value 15
+# loda.js:1094 resolved Maybe.Value 21
+# VM170:2 yay! 21
+
+# reduceM(reducer, [1,2,3,NaN,5,6]).then(function(v) {
+#  console.log('yay!', v); }, function(e) { console.log('shit', e);})
+#  resolved Maybe.Value 3
+# loda.js:1094 resolved Maybe.Value 6
+# loda.js:1094 resolved Maybe.None
+# VM187:2 shit Error {stack: (...)}
