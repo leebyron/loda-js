@@ -72,6 +72,10 @@ macro (!) {
  *     console.log(b ?: 'oops'); // "oops"
  *     console.log(c ?: 'oops'); // "abc"
  *
+ * While this expands to `Maybe.or(otherwise, maybe)`, it's isomorphic to:
+ *
+ *     maybe? ? maybe! : otherwise
+ *
  */
 macro (?:) {
   // a ?: b => Maybe.or(b, a)
