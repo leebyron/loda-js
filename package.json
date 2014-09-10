@@ -28,10 +28,12 @@
     "uglify-js": "^2.4.15",
     "benchmark": "^1.0.0",
     "pad": "0.0.5",
-    "promise": "^5.0.0"
+    "promise": "^5.0.0",
+    "sweet.js": "^0.7.1"
   },
   "files": [
     "src",
+    "macros",
     "README.md"
   ],
   "keywords": [

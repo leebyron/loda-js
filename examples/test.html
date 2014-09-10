@@ -1,0 +1,136 @@
+<script src="../browser/loda.js"></script>
+<script>loda.install(window)</script>
+<script>
+
+/*
+TODO: see if modelling a Promise as a co-monad (aka Either) makes more sense
+This Promise<MT extends Maybe<T>> is slightly tedious and hard to reason about
+
+How does Either get treated in map/bind/etc? Promise might need to be treated
+like Either.
+
+
+Monad<T>
+
+A. Monad<T>
+B. T
+
+A -> A    call
+A -> B    nonsense
+
+B -> A    (T -> M<T>) bind
+B -> B    (T -> T) lift aka lift
+
+
+Promise<T>
+
+A. Promise<T>
+B. Either<T>
+C. T
+
+A -> A    call
+A -> B    nonsense
+A -> C    nonsense
+
+B -> A    (Either<T> -> Promise<T>) bindResult
+B -> B    (Either<T> -> Either<T>) liftResult
+B -> C    nonsense
+
+C -> A    (T -> Promise<T>) bind
+C -> B    (T -> Either<T>) lift aka lift, alternative form
+C -> C    (T -> T) lift aka lift
+
+
+// pure :: A<any> -> V -> A<V>
+// pure :: Promise<any> -> Maybe<V> -> Promise<V>
+// pure :: Promise<any> -> V -> Promise<V>
+if (applicative.then) { // is Promise
+  return value instanceof Maybe ?
+    value.is() ?
+      Promise.accept(value.get()) :
+      Promise.reject(value.isError() && value.getError()) :
+    Promise.accept(value);
+}
+
+
+*/
+
+// p = new Promise(function (uh, oh) {setTimeout(uh, 300, 'hi')})
+// q = new Promise(function (uh, oh) {setTimeout(uh, 700, 'hello')})
+
+p = promise(function (resolve) { setTimeout(resolve, 300, 'hi') })
+q = promise(function (resolve) { setTimeout(resolve, 300, null) })
+
+// r = (+) <%> p <*> q
+//r = applyM(lift(add, p), q);
+
+qa = liftResult(Maybe.or('default'), q);
+
+r = applyM(lift(add, p), qa);
+r.then(function(){console.log('yes', arguments);}, function(e){console.log('no', e, e.stack);})
+
+
+
+x = joinM(promise(function (resolve) {
+  resolve(
+    Maybe(
+      promise(function (resolve) { setTimeout(resolve, 300, 'uhh'); })
+    )
+  )
+}));
+x.then(function(){console.log('xyes', arguments);}, function(e){console.log('xno', e, e.stack);})
+
+
+
+x2 = promise(function (resolve) {
+  resolve(
+    Maybe(
+      promise(function (resolve) { setTimeout(resolve, 300, 'uhh'); })
+    )
+  )
+});
+x2.then(function(){console.log('x2yes', arguments);}, function(e){console.log('x2no', e, e.stack);})
+
+// r = bind(
+//   function(maybeAddFn) {
+//     return lift(
+//       applyM(maybeAddFn),
+//       p
+//     )
+//   },
+//   lift(
+//     lift(add),
+//     q
+//   )
+// )
+
+
+
+
+
+
+
+
+
+// Test w Promises
+pred = function(a) { return promise(function(resolve) { setTimeout(function() {var pass = Math.random() < 0.5; console.log('pred',a,pass); resolve(pass)}, Math.random() * 500); }) }
+filterM(pred, [1,2,3,4,5]).then(function(v) { console.log('yay!', v); }, function(e) { console.log('shit', e, e.stack);})
+
+
+
+// Test w Maybe
+predMaybe = function(a) { return lift(gt(3), Maybe(parseInt(a))) }
+console.log(
+  Maybe.or('shit', filterM(predMaybe, ['1','2','3','4','5']))
+);
+
+mapM(pred, ['A','B','C','D','E']).then(function(v) { console.log('map yay!', v); }, function(e) { console.log('map shit', e, e.stack);})
+
+
+
+
+</script>
+
+
+
+

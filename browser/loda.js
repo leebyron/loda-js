@@ -461,11 +461,10 @@ function _iterable(maybeIterable) {
 // Internal iterator helpers
 
 function isIterable(maybeIterable) {
-  return !!(maybeIterable && (
+  return !!(maybeIterable && typeof maybeIterable !== 'string' && (
     maybeIterable[ITERATOR_SYMBOL] ||
     maybeIterable[ALT_ITERATOR_SYMBOL] ||
-    isArray(maybeIterable) ||
-    typeof maybeIterable === 'string'
+    isArray(maybeIterable)
   ));
 }
 
@@ -755,7 +754,7 @@ function flatten(deepIterable) {
         var value = step.value;
         if (step.done !== false) {
           iter = stack.pop();
-        } else if (isIterable(value) && typeof value !== 'string') {
+        } else if (isIterable(value)) {
           stack.push(iter);
           iter = _iterator(value);
         } else {
@@ -1088,6 +1087,9 @@ var gteq = curryRight(argComparer(function (x, y) {
 
 // lift :: (a -> b) -> M a -> M b
 function lift(fn, functor) {
+  if (functor == null) {
+    return functor;
+  }
   if (isCurried(fn) && fn.length > 1 && functor.chain) {
     return bind(function (value) {
       return pure(functor, curry(partial(uncurry(fn), value), fn.length - 1));
@@ -1102,15 +1104,25 @@ function lift(fn, functor) {
   if ((functor.chain && functor.of) || functor.then) { // is Monad
     return bind(function (a) { return pure(functor, fn(a)); }, functor);
   }
+  // Hold the monadic property that lift should return a value of the same type,
+  // so lifting an Array should return an Array, not an Iterable.
+  if (isArray(functor)) {
+    return array(map(fn, functor));
+  }
+  // Other iterables are just going to be rule-breakers for the moment.
   if (isIterable(functor)) { // is Iterable
     return map(fn, functor);
   }
-  throw new Error('Value provided is not Functor: ' + functor);
+  // Treat raw values as a pseudo-Maybe.
+  return fn(functor);
 }
 
 // TODO: handle curried case
 // AKA <*>
 function applyM(appFn, appVal) {
+  if (appFn == null || appVal == null) {
+    return null;
+  }
   if (appFn.ap) { // is Apply
     return appFn.ap(appVal);
   }
@@ -1118,13 +1130,17 @@ function applyM(appFn, appVal) {
   if (appFn.chain || appFn.then || isIterable(appFn)) {
     return bind(function (fn) { return lift(fn, appVal); }, appFn);
   }
-  throw new Error('Value provided is not Apply: ' + appFn);
+  // Treat raw values as pseudo-Maybe
+  return appFn(appVal);
 }
 
 // pure :: A<any> -> V -> A<V>
 // pure :: Promise<any> -> Maybe<V> -> Promise<V>
 // pure :: Promise<any> -> V -> Promise<V>
 function pure(applicative, value) {
+  if (applicative == null) {
+    return applicative;
+  }
   if (applicative.then) {
     applicative = applicative.constructor;
   }
@@ -1140,11 +1156,15 @@ function pure(applicative, value) {
   if (isIterable(applicative)) { // is Iterable
     return [value];
   }
-  throw new Error('Value provided is not Applicative: ' + applicative);
+  // Not applicative? This is the "null case", value is returned as is.
+  return value;
 }
 
 // TODO: accept multiple args and do the apply chaining for us
 function bind(fn, monad) {
+  if (monad == null) {
+    return monad;
+  }
   if (monad.chain) { // is Chain
     return monad.chain(fn);
   }
@@ -1154,7 +1174,8 @@ function bind(fn, monad) {
   if (isIterable(monad)) { // is Iterable
     return concat(map(fn, monad));
   }
-  throw new Error('Value provided is not Monad: ' + monad);
+  // Treat raw values as a pseudo-Maybe.
+  return fn(monad);
 }
 
 // sequence :: Monad m => [m a] -> m [a]
@@ -1193,6 +1214,9 @@ function bindResult(fn, promise) {
 
 // :: (Monad joinable) => joinable<joinable<T>> -> joinable<T>
 function joinM(joinable) {
+  if (joinable == null) {
+    return joinable;
+  }
   if (joinable.then) {
     // Promise/A+ joins itself.
     return joinable;
@@ -1207,7 +1231,8 @@ function joinM(joinable) {
     var val = _iterator(joinable).next().value;
     return isIterable(val) ? val : joinable;
   }
-  throw new Error('Value provided is not Joinable: ' + joinable);
+  // The "null case" is an uncontained value, which joins to itself.
+  return joinable;
 }
 
 // :: (Monad m) => (T -> M<boolean>) -> T[] -> M<T[]>
@@ -1328,19 +1353,19 @@ function Maybe(value) {
 
 Maybe.of = Maybe;
 Maybe.is = function (maybe) {
-  return maybe.is();
+  return Maybe(maybe).is();
 };
 Maybe.isError = function (maybe) {
-  return maybe.isError();
+  return Maybe(maybe).isError();
 };
 Maybe.or = curry(function (fallback, maybe) {
-  return maybe.or(fallback);
+  return Maybe(maybe).or(fallback);
 });
 Maybe.get = function (maybe) {
-  return maybe.get();
+  return Maybe(maybe).get();
 };
 Maybe.getError = function (maybe) {
-  return maybe.getError();
+  return Maybe(maybe).getError();
 };
 Maybe['try'] = function(fn) { // TODO: handle curried fns
   return arity(fn.length, function() {
@@ -1633,8 +1658,6 @@ module.exports = loda = {
   'gt': gt,
   'gteq': gteq,
 
-
-
   'pure': curry(pure),
   'bind': curry(bind),
   'lift': curry(lift, 2),
@@ -1650,7 +1673,6 @@ module.exports = loda = {
   'promise': curry(promise),
   'liftResult': curry(liftResult),
   'bindResult': curry(bindResult),
-
 
   'Maybe': Maybe,
 }
