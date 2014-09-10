@@ -74,7 +74,7 @@ function apply(fn, argList, thisArg) {
     return fn.apply(thisArg || this, argList);
   }
   if (isIterable(fn)) {
-    return array(applyM(fn, argList));
+    return array(ap(fn, argList));
   }
   throw new TypeError('Invalid function: ' + fn);
 }
@@ -1099,7 +1099,7 @@ function lift(fn, functor) {
     return functor.map(fn);
   }
   if (functor.ap) { // is Apply
-    return applyM(pure(functor, fn), functor);
+    return ap(pure(functor, fn), functor);
   }
   if ((functor.chain && functor.of) || functor.then) { // is Monad
     return bind(function (a) { return pure(functor, fn(a)); }, functor);
@@ -1119,7 +1119,7 @@ function lift(fn, functor) {
 
 // TODO: handle curried case
 // AKA <*>
-function applyM(appFn, appVal) {
+function ap(appFn, appVal) {
   if (appFn == null || appVal == null) {
     return null;
   }
@@ -1187,7 +1187,7 @@ function arrayM(monadList, monadType) {
   }
   var list = pure(step.value, []);
   while (true) {
-    list = applyM(lift(curriedPushIn, list), step.value);
+    list = ap(lift(curriedPushIn, list), step.value);
     step = iter.next();
     if (step.done !== false) return list;
   }
@@ -1662,7 +1662,7 @@ module.exports = loda = {
   'bind': curry(bind),
   'lift': curry(lift, 2),
 
-  'applyM': curry(applyM, 2),
+  'ap': curry(ap, 2),
   'reduceM': curry(reduceM, 2),
   'filterM': curry(filterM, 2),
   'mapM': curry(mapM, 2),

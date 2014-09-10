@@ -322,6 +322,54 @@ operator (><) 14 right { $l, $r } => #{ compose($l, $r) }
 
 
 /**
+ * Call
+ * ====
+ *
+ * Loose associativity call. Just sugar for (callableExpression)(arg)
+ */
+operator ($) 1 left { $callable, $argument } => #{ ($callable)($argument) }
+
+
+
+/**
+ * Infix functions
+ * ===============
+ *
+ * Call a function using infix notation.
+ *
+ * `1 @add 2` is shorthand for `add(1, 2)`
+ *
+ * Note to Haskell fans:
+ *
+ * "``" collides with JavaScript's template string literals.
+ */
+macro (@) {
+  rule infix { $first:expr | $func:ident $second:expr } => {
+    ($func)($first, $second)
+  }
+}
+
+
+
+/**
+ * Lift and Apply
+ * ==============
+ *
+ * Provides Haskell's infix operators for lift and ap, allowing for a more
+ * natural style of chaining curried applicative functions.
+ *
+ * `x <$> y` is shorthand for `lift(x, y)`
+ * `x <*> y` is shorthand for `ap(x, y)`
+ *
+ *     add <$> Maybe('johntra') <*> Maybe('volta') // Maybe "johntravolta"
+ *
+ */
+operator (<$>) 3 left { $l, $r } => #{ lift($l, $r) }
+operator (<*>) 3 left { $l, $r } => #{ ap($l, $r) }
+
+
+
+/**
  * Monadic bind
  * ============
  *
@@ -346,13 +394,7 @@ operator (<=<) 2 right { $l, $r } => #{ bind($l, $r) }
 
 
 
-/**
- * Call
- * ====
- *
- * Loose associativity call. Just sugar for (callableExpression)(arg)
- */
-operator ($) 1 left { $callable, $argument } => #{ ($callable)($argument) }
+// TODO: Add Haskell's "do" notation.
 
 
 
@@ -387,8 +429,11 @@ export (!)
 export (?:)
 export (?)
 export (if)
-export (>=>)
-export (<=<)
 export (><)
 export ($)
+export (@)
+export (<$>)
+export (<*>)
+export (>=>)
+export (<=<)
 export function$

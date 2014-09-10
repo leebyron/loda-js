@@ -231,6 +231,17 @@ console.log(y); // null
 
 
 
+// Calling functions infix style:
+console.log(
+  1 @add 2
+);
+
+// Infix lift and ap
+console.log(
+  add <$> Maybe('johntra') <*> Maybe('volta')
+);
+
+
 // Let's talk about bind.
 
 
@@ -255,3 +266,4 @@ var cc = function(response) {
   console.log("JSON Response!", response);
 }
 cc <=< bb(10) <=< aa <=< 1
+

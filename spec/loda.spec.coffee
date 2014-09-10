@@ -1140,9 +1140,9 @@ describe 'loda', ->
           b = Maybe null
           c = Maybe new Error 'fatal'
           add3Maybe = Maybe add 3
-          sumA = applyM add3Maybe, a
-          sumB = applyM add3Maybe, b
-          sumC = applyM add3Maybe, c
+          sumA = ap add3Maybe, a
+          sumB = ap add3Maybe, b
+          sumC = ap add3Maybe, c
           expect(Maybe.or 'nuthin', sumA).toBe 4
           expect(Maybe.or 'nuthin', sumB).toBe 'nuthin'
           expect(Maybe.or 'nuthin', sumC).toBe 'nuthin'
@@ -1153,12 +1153,12 @@ describe 'loda', ->
           b = Maybe 3
           c = Maybe null
           addAMaybe = lift add, a
-          sumAB = applyM addAMaybe, b
+          sumAB = ap addAMaybe, b
           expect(Maybe.or 'nuthin', sumAB).toBe 4
-          sumAC = applyM addAMaybe, c
+          sumAC = ap addAMaybe, c
           expect(Maybe.or 'nuthin', sumAC).toBe 'nuthin'
           addCMaybe = lift add, c
-          sumCB = applyM addCMaybe, b
+          sumCB = ap addCMaybe, b
           expect(addCMaybe).toBe Maybe.None
           expect(Maybe.or 'nuthin', sumCB).toBe 'nuthin'
 
@@ -1167,8 +1167,8 @@ describe 'loda', ->
           t = Maybe mul 3
           v = Maybe 10
           expect(eq(
-            applyM(applyM(lift(((f) -> (g) -> (x) -> f(g(x))), s), t), v),
-            applyM(s, applyM(t, v))
+            ap(ap(lift(((f) -> (g) -> (x) -> f(g(x))), s), t), v),
+            ap(s, ap(t, v))
           )).toBe true
 
       describe 'applicative', ->
@@ -1182,7 +1182,7 @@ describe 'loda', ->
           a = Maybe
           v = Maybe 123
           expect(eq(
-            applyM(pure(a, id), v),
+            ap(pure(a, id), v),
             v
           )).toBe true
 
@@ -1191,7 +1191,7 @@ describe 'loda', ->
           f = add 2
           x = 1
           expect(eq(
-            applyM(pure(a, f), pure(a, x)),
+            ap(pure(a, f), pure(a, x)),
             pure(a, f x)
           )).toBe true
 
@@ -1200,8 +1200,8 @@ describe 'loda', ->
           u = Maybe mul 2
           x = 1
           expect(eq(
-            applyM(u, pure(a, x)),
-            applyM(pure(a, (f) -> f x), u)
+            ap(u, pure(a, x)),
+            ap(pure(a, (f) -> f x), u)
           )).toBe true
 
       describe 'chain / bind', ->
@@ -1288,7 +1288,7 @@ describe 'loda', ->
 # q = new Promise(function (uh, oh) {uh('hi')})
 # Promise {[[PromiseStatus]]: "resolved", [[PromiseValue]]: "hi"}
 # r = lift(function (maybeFn) {
-#  return applyM(Maybe(3), maybeFn);}, lift(lift(add), q))
+#  return ap(Maybe(3), maybeFn);}, lift(lift(add), q))
 # Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
 # r.then(function(){console.log('yes', arguments);},
 #   function(e){console.log('no', e, e.stack);})
