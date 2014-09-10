@@ -44,14 +44,14 @@
  *
  */
 macro (!) {
+  // Leave negation alone.
+  rule infix { | $negatable:expr } => {
+    $[!] $negatable
+  }
+
   // a! => Maybe.get(a)
   rule infix { $maybe:expr | } => {
     Maybe.get($maybe)
-  }
-
-  // Leave negation alone.
-  rule {} => {
-    $[!]
   }
 }
 

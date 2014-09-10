@@ -49,9 +49,8 @@ var uhoh = Maybe('thisorthat');
 console.log(uhoh! && !false);
 
 // Negate a forced chain! WHOOAAA!
-// TODO: it would be nicer if the parens are not necessary here.
 console.log(
-  !(a!.b!.c!)
+  !a!.b!.c!
 );
 
 // Chain can include method calls
