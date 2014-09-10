@@ -64,10 +64,6 @@ macro (!) {
  * Use `?:` to get a value from a Maybe, with a fallback value should the Maybe
  * be without a value.
  *
- * This is similar to JavaScript's `||` operator, however it only falls through
- * on null values instead of falsey values, making it safe to use with numbers
- * and booleans.
- *
  * Also works with regular values.
  *
  *     var a = null;
@@ -80,6 +76,20 @@ macro (!) {
  * While this expands to `Maybe.or(otherwise, maybe)`, it's isomorphic to:
  *
  *     maybe? ? maybe! : otherwise
+ *
+ * This is similar to JavaScript's `||` operator, however it only falls through
+ * on null values instead of falsey values, making it safe to use with numbers
+ * and booleans.
+ *
+ *     var a = null;
+ *     var b = false;
+ *     var c = 0;
+ *     console.log(a || 'oops'); // "oops"
+ *     console.log(b || 'oops'); // "oops"
+ *     console.log(c || 'oops'); // "oops"
+ *     console.log(a ?: 'oops'); // "oops"
+ *     console.log(b ?: 'oops'); // false
+ *     console.log(c ?: 'oops'); // 0
  *
  */
 macro (?:) {

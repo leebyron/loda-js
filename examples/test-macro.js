@@ -87,6 +87,19 @@ console.log(
   num ?: Math.PI // hopefully closer to what you expected.
 );
 
+// This is similar to JavaScript's `||` operator, however it only falls through
+// on null values instead of falsey values, making it safe to use with numbers
+// and booleans.
+var va = null;
+var vb = false;
+var vc = 0;
+console.log("oops", va || 'oops'); // "oops"
+console.log("oops", vb || 'oops'); // "oops"
+console.log("oops", vc || 'oops'); // "oops"
+console.log("oops", va ?: 'oops'); // "oops"
+console.log(false,  vb ?: 'oops'); // false
+console.log(0,      vc ?: 'oops'); // 0
+
 // And it works with raw values
 console.log(
   x?.y?.z?
