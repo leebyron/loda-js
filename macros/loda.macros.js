@@ -197,8 +197,8 @@ macro (?) {
    * It is often useful at the end of a chained `?.` access of Maybes:
    *
    *     var obj = {x:{y:{z:'value'}}}
-   *     console.log(x?.y?.z?) // true
-   *     console.log(x?.w?.v?) // false
+   *     console.log(obj?.x?.y?.z?) // true
+   *     console.log(obj?.x?.w?.v?) // false
    *
    */
   // a? => Maybe.is(a)
