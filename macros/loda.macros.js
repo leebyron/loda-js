@@ -394,7 +394,35 @@ operator (<=<) 2 right { $l, $r } => #{ bind($l, $r) }
 
 
 
-// TODO: Add Haskell's "do" notation.
+/**
+ * Do chain
+ * ========
+ *
+ * Experimental. Haskell considers this [harmful](http://www.haskell.org/haskellwiki/Do_notation_considered_harmful).
+ *
+ *     var list = $do {
+ *       x <- [1, 2];
+ *      [0];
+ *       y <- [x, x];
+ *       return [y * 2, y * 3];
+ *     }
+ *
+ */
+macro $do {
+  rule { { $arg:ident <- $monad:expr ; $rest ... } } => {
+    $monad >=> function($arg) {
+      return $do { $rest ... }
+    }
+  }
+  rule { { $monad:expr ; $rest ... } } => {
+    $monad >=> function() {
+      return $do { $rest ... }
+    }
+  }
+  rule { { return $monad:expr ; } } => {
+    $monad
+  }
+}
 
 
 
@@ -436,4 +464,5 @@ export (<$>)
 export (<*>)
 export (>=>)
 export (<=<)
+export $do
 export function$

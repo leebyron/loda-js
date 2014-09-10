@@ -267,3 +267,13 @@ var cc = function(response) {
 }
 cc <=< bb(10) <=< aa <=< 1
 
+
+
+
+var list = $do {
+  x <- [1, 2];
+ [0];
+  y <- [x, x];
+  return [y * 2, y * 3];
+}
+console.log(array(list));
