@@ -500,12 +500,15 @@ export (!)
 export (?:)
 export (?)
 export (if)
+
 export (><)
 export ($)
 export (@)
+
 export (<$>)
 export (<*>)
 export (>=>)
 export (<=<)
 export $do
+
 export function$
