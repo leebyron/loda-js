@@ -48,6 +48,11 @@ macro (!) {
   rule infix { $maybe:expr | } => {
     Maybe.get($maybe)
   }
+
+  // Leave negation alone.
+  rule {} => {
+    $[!]
+  }
 }
 
 
