@@ -115,6 +115,20 @@ console.log(
   a?
 );
 
+// This is similar to JavaScript's boolean casting `!!`, however it only
+// compares to null values rather than falsey values, making it safe to use
+// with numbers and booleans.
+var va = null;
+var vb = false;
+var vc = 0;
+console.log(false, !!va); // false
+console.log(false, !!vb); // false
+console.log(false, !!vc); // false
+console.log(false, va?); // false
+console.log(true, vb?); // true
+console.log(true, vc?); // true
+
+
 // and in concert with chaining
 
 console.log(

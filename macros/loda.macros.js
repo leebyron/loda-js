@@ -209,6 +209,20 @@ macro (?) {
    *     console.log(obj?.x?.y?.z?) // true
    *     console.log(obj?.x?.w?.v?) // false
    *
+   * This is similar to JavaScript's boolean casting `!!`, however it only
+   * compares to null values rather than falsey values, making it safe to use
+   * with numbers and booleans.
+   *
+   *     var a = null;
+   *     var b = false;
+   *     var c = 0;
+   *     console.log(!!a); // false
+   *     console.log(!!b); // false
+   *     console.log(!!c); // false
+   *     console.log(a?); // false
+   *     console.log(b?); // true
+   *     console.log(c?); // true
+   *
    */
   // a? => Maybe.is(a)
   rule infix { $maybe:expr | } => {
