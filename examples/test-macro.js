@@ -309,3 +309,23 @@ var logged = $do {
 
 logged.then(function (value) { console.log('empty promise?', value) })
       .catch(function (error) { console.log('Error:', error) });
+
+
+// Nest away!
+var logged2 = $do {
+  x <- getNumber(4)
+  y <- $do {
+    x <- getNumber(2);
+    y <- getNumber(6);
+    y = x + y * 2;
+    return x + y;
+  }
+  var q = $do {
+    return getNumber(123);
+  }
+  qx <- q;
+  logValue(x + y)
+}
+
+logged2.then(function (value) { console.log('empty promise?', value) })
+      .catch(function (error) { console.log('Error:', error) });

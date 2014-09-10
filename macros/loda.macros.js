@@ -283,10 +283,10 @@ macro property_access {
  */
 let if = macro {
   // if (var x = maybe) {...} => if (maybe?) {var x = maybe! ...}
-  rule { ( $def:definition = $maybe:expr ) { $body ... } } => {
+  rule { ( $assign:assignment $maybe:expr ) { $body ... } } => {
     var maybe = $maybe;
     if (maybe?) {
-      $def = maybe!;
+      $assign maybe!;
       $body ...
     }
   }
@@ -294,10 +294,10 @@ let if = macro {
   rule {} => { if }
 }
 
-macro definition {
-  rule { var $name:ident }
-  // ES6 let scope
-  rule { let $name:ident }
+macro assignment {
+  rule { var $name:ident = }
+  rule { let $name:ident = }
+  rule { $name:ident = }
 }
 
 
@@ -449,21 +449,30 @@ macro $do {
   rule { { $clause:do_clause } } => { $clause }
 }
 
+macro do_expr {
+  rule { $do $expr:$do }
+  rule { $expr:expr ; } => { $expr }
+  rule { $expr:expr }
+}
+
 macro do_clause {
-  rule { $arg:ident <- $monad:expr ; $rest ... } => {
+  rule { return $monad:do_expr } => {
+    $monad
+  }
+  rule { $arg:ident <- $monad:do_expr $rest ... } => {
     $monad >=> function($arg) { return_do $rest ... }
   }
-  rule { $monad:expr ; $rest ... } => {
+  rule { $monad:do_expr $rest ... } => {
     $monad >=> function() { return_do $rest ... }
-  }
-  rule { return $monad:expr ; } => {
-    $monad
   }
 }
 
 macro return_do {
+  rule { $assign:assignment $val:do_expr $rest ... } => {
+    $assign $val; return_do $rest ...
+  }
   rule { $clause:do_clause } => { return $clause }
-  rule {} => {}
+  rule {}
 }
 
 
