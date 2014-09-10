@@ -398,7 +398,7 @@ operator (<=<) 2 right { $l, $r } => #{ bind($l, $r) }
  * Do chain
  * ========
  *
- * Experimental. Haskell considers this [harmful](http://www.haskell.org/haskellwiki/Do_notation_considered_harmful).
+ * Experimental.
  *
  *     var list = $do {
  *       x <- [1, 2];
@@ -407,21 +407,63 @@ operator (<=<) 2 right { $l, $r } => #{ bind($l, $r) }
  *       return [y * 2, y * 3];
  *     }
  *
+ * Haskell suggests [avoiding it](http://www.haskell.org/haskellwiki/Things_to_avoid#do_notation).
+ * `$do` is simply sugar for `>=>
+ *
+ * Instead of
+ *
+ *     $do {
+ *       text <- readFile('foo');
+ *       writeFile('bar', text);
+ *     }
+ *
+ * you could write (assuming writeFile is curried)
+ *
+ *     readFile('foo') >=> writeFile('bar');
+ *
+ * The code
+ *
+ *     var fooText = $do {
+ *       text <- readFile('foo');
+ *       return text;
+ *     }
+ *
+ * can be simplified to
+ *
+ *     var fooText = readFile('foo');
+ *
+ *
+ * And this complex expression
+ *
+ *     var foobarLines = $do {
+ *       text <- readFile('foobar');
+ *       return text.split('\n');
+ *     }
+ *
+ * is expressed more simply as
+ *
+ *     var foobarLines = readFile('foobar')?.split('\n');
+ *
  */
 macro $do {
-  rule { { $arg:ident <- $monad:expr ; $rest ... } } => {
-    $monad >=> function($arg) {
-      return $do { $rest ... }
-    }
+  rule { { $clause:do_clause } } => { $clause }
+}
+
+macro do_clause {
+  rule { $arg:ident <- $monad:expr ; $rest ... } => {
+    $monad >=> function($arg) { return_do $rest ... }
   }
-  rule { { $monad:expr ; $rest ... } } => {
-    $monad >=> function() {
-      return $do { $rest ... }
-    }
+  rule { $monad:expr ; $rest ... } => {
+    $monad >=> function() { return_do $rest ... }
   }
-  rule { { return $monad:expr ; } } => {
+  rule { return $monad:expr ; } => {
     $monad
   }
+}
+
+macro return_do {
+  rule { $clause:do_clause } => { return $clause }
+  rule {} => {}
 }
 
 
@@ -443,7 +485,8 @@ macro $do {
  *
  * Note: this results in a variable declaration, so `function$` is not
  * [hoisted](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Scope_Cheatsheet#Hoisting)
- * like regular functions. Be aware of this limitation when defining functions.
+ * like regular functions. Be aware of this limitation when defining
+ * curried functions.
  */
 macro function$ {
   rule { $name ($params ...) {$body ...} } => {

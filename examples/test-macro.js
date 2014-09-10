@@ -208,7 +208,8 @@ if (var aval = a) {
 var a = new Promise(function(resolve) { setTimeout(resolve, 1000, 'abc') });
 var b = a?.toUpperCase();
 console.log(b); // Promise
-b.then(function (value) { console.log(value) }); // "ABC" (after a second)
+b.then(function (value) { console.log(value) }) // "ABC" (after a second)
+ .catch(function (error) { console.log('Error:', error) });
 
 // and even Array!
 var a = [ 'a', 'b', 'c' ];
@@ -277,3 +278,34 @@ var list = $do {
   return [y * 2, y * 3];
 }
 console.log(array(list));
+
+
+// Test with some IO-ish functions.
+
+var getNumber = function (x) {
+  return promise(function (resolve) {
+    setTimeout(function () {
+      resolve(x * x);
+    }, 500)
+  });
+}
+
+var logValue = function (x) {
+  return promise(function (resolve) {
+    setTimeout(function () {
+      console.log(x);
+      resolve(true);
+    }, 500)
+  });
+}
+
+
+// No return? `logged` is an Empty Promise.
+var logged = $do {
+  x <- getNumber(4);
+  y <- getNumber(6);
+  logValue(x + y);
+}
+
+logged.then(function (value) { console.log('empty promise?', value) })
+      .catch(function (error) { console.log('Error:', error) });
