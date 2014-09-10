@@ -59,6 +59,10 @@ macro (!) {
  * Use `?:` to get a value from a Maybe, with a fallback value should the Maybe
  * be without a value.
  *
+ * This is similar to JavaScript's `||` operator, however it only falls through
+ * on null values instead of falsey values, making it safe to use with numbers
+ * and booleans.
+ *
  * Also works with regular values.
  *
  *     var a = null;
