@@ -191,13 +191,19 @@ function lift(fn, functor) {
       bind(function (value) {
         return pure(functor, curry(partial(uncurry(fn), value), fn.length - 1));
       }, functor) :
-    isArray(functor) ? functor.map(partial(lift, fn)) :
+    isArray(functor) ? functor.map(mapValues(fn)) :
     functor.map ? functor.map(fn) : // Functor
     functor.ap ? ap(pure(functor, fn), functor) : // Apply
     functor.chain && functor.of || functor.then ? // is Monad
       bind(function (value) { return pure(functor, fn(value)); }, functor) :
     fn(functor) // Raw value
   );
+}
+
+function mapValues(mapper) {
+  return function (value) {
+    return value != null && mapper(value);
+  }
 }
 
 
@@ -252,7 +258,7 @@ function bind(fn, monad) {
     monad == null ? monad : // Empty raw value
     monad.chain ? monad.chain(fn) : // Monad
     monad.then ? monad.then(fn) : // Promise
-    isArray(monad) ? Array.prototype.concat.apply([], monad.map(fn)) : // Array
+    isArray(monad) ? Array.prototype.concat.apply([], monad.map(mapValues(fn))) : // Array
     fn(monad) // Raw value
   );
   // TODO: figure out how to model iterables
