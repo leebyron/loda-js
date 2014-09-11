@@ -187,12 +187,13 @@ var isArray = Array.isArray;
 
 // lift :: (a -> b) -> M a -> M b
 function lift(fn, functor) {
-  return  (
+  return (
     functor == null ? functor : // Empty raw value
     isCurried(fn) && fn.length > 1 && functor.chain ? // Create an Apply // TODO: should functor.then and isArray be included here?
       bind(function (value) {
         return pure(functor, curry(partial(uncurry(fn), value), fn.length - 1));
       }, functor) :
+    isArray(functor) ? functor.map(partial(lift, fn)) :
     functor.map ? functor.map(fn) : // Functor
     functor.ap ? ap(pure(functor, fn), functor) : // Apply
     functor.chain && functor.of || functor.then ? // is Monad
@@ -262,8 +263,6 @@ function bind(fn, monad) {
   // }
 }
 
-// TODO!!! Not accepting iterables is causing the bench runner to fail
-
 
 
 
@@ -308,6 +307,7 @@ function assertError(maybeError) {
 }
 
 
+
 global.arity = arity;
 global.compose = compose;
 global.composeRight = composeRight;
@@ -330,4 +330,4 @@ global.assertValue = assertValue;
 global.isError = isError;
 global.assertError = assertError;
 
-}(Function('return this')))
+}(Function('return this')()))

@@ -192,8 +192,8 @@ macro (?) {
   // a?[b] => lift(get(b), a)
   // a?.b(x) => lift(function(v){return v.b(x);}, a)
   // a?[b](x) => lift(function(v){return v[b](x);}, a)
-  rule infix { $monad:expr | $access:access_expr } => {
-    lift(function (v) { return v && v $access; }, $monad)
+  rule infix { $monad:expr | $access:access_chain } => {
+    lift(function (v) { return v $access; }, $monad)
   }
 
 
@@ -240,8 +240,12 @@ macro (?) {
   }
 }
 
+macro access_chain {
+  rule { $access:access_expr ... }
+}
+
 macro access_expr {
-  rule { $access:access ($args ...) }
+  rule { $access:access ($args:expr ...) }
   rule { $access:access }
 }
 

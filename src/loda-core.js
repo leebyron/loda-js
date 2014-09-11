@@ -185,12 +185,13 @@ var isArray = Array.isArray;
 
 // lift :: (a -> b) -> M a -> M b
 function lift(fn, functor) {
-  return  (
+  return (
     functor == null ? functor : // Empty raw value
     isCurried(fn) && fn.length > 1 && functor.chain ? // Create an Apply // TODO: should functor.then and isArray be included here?
       bind(function (value) {
         return pure(functor, curry(partial(uncurry(fn), value), fn.length - 1));
       }, functor) :
+    isArray(functor) ? functor.map(partial(lift, fn)) :
     functor.map ? functor.map(fn) : // Functor
     functor.ap ? ap(pure(functor, fn), functor) : // Apply
     functor.chain && functor.of || functor.then ? // is Monad
@@ -302,6 +303,7 @@ function assertError(maybeError) {
   }
   throw new Error('Forced error: ' + maybeError);
 }
+
 
 
 global.arity = arity;

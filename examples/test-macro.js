@@ -103,12 +103,14 @@ console.log(0,      vc ?: 'oops'); // 0
 
 // And it works with raw values
 console.log(
+  true,
   x?.y?.z?
 );
 
 // It also works with subscripting
 var cString = 'c';
 console.log(
+  3,
   a?['b']?[cString].or('bust')
 );
 
@@ -355,3 +357,29 @@ var logged2 = $do {
 logged2.then(function (value) { console.log('empty promise?', value) })
        .catch(function (error) { console.log('Error:', error) });
 
+
+// Deep dive into data:
+
+var data = {
+  name: 'Lee',
+  friends: {
+    nodes: [
+      {
+        name: 'John',
+        birthday: {
+          year: 1987
+        }
+      },
+      {
+        name: 'Brett',
+        birthday: null
+      }
+    ]
+  }
+};
+
+var birthdays = data?.friends?.nodes?.birthday?.year;
+console.log('birthdays', birthdays);
+
+var birthdays = data?.friends?.nodes[0]?.birthday?.year;
+console.log('birthdays', birthdays);
