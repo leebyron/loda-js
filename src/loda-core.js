@@ -317,11 +317,11 @@ function assertError(maybeError) {
 
 // Export
 
-global.arity = arity;
 global.compose = compose;
 global.composeRight = composeRight;
 global.partial = partial;
 global.partialRight = partialRight;
+global.arity = arity;
 global.curry = curry;
 global.curryRight = curryRight;
 global.uncurry = uncurry;
