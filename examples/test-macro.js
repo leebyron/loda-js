@@ -63,7 +63,7 @@ console.log(c!.toUpperCase()) // logs "ABC"
 // But forcing could throw! Let's do this in a safe way:
 
 console.log(
-  bind(at('c'), bind(at('b'), a)).or('bust')
+  bind(get('c'), bind(get('b'), a)).or('bust')
 );
 
 // Yikes. With better syntax this time:

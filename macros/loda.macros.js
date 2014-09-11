@@ -49,9 +49,9 @@ macro (!) {
     $[!] $negatable
   }
 
-  // a! => Maybe.get(a)
+  // a! => assertValue(a)
   rule infix { $maybe:expr | } => {
-    Maybe.get($maybe)
+    assertValue($maybe)
   }
 }
 
@@ -93,9 +93,9 @@ macro (!) {
  *
  */
 macro (?:) {
-  // a ?: b => Maybe.or(b, a)
+  // a ?: b => valueOr(b, a)
   rule infix { $maybe:expr | $otherwise:expr } => {
-    Maybe.or($otherwise, $maybe)
+    valueOr($otherwise, $maybe)
   }
 }
 
@@ -108,7 +108,7 @@ macro (?) {
 
   // Allow use of value? in ternaries, see below.
   rule infix { $maybe:expr | $[?] $then:expr : $otherwise:expr } => {
-    Maybe.is($maybe) $[?] $then : $otherwise
+    isValue($maybe) $[?] $then : $otherwise
   }
 
   // Leave regular ternaries alone.
@@ -188,12 +188,12 @@ macro (?) {
    *     console.log(y); // null
    *
    */
-  // a?.b => lift(at('b'), a)
-  // a?[b] => lift(at(b), a)
+  // a?.b => lift(get('b'), a)
+  // a?[b] => lift(get(b), a)
   // a?.b(x) => lift(function(v){return v.b(x);}, a)
   // a?[b](x) => lift(function(v){return v[b](x);}, a)
-  rule infix { $monad:expr | $liftfn:liftable } => {
-    lift($liftfn, $monad)
+  rule infix { $monad:expr | $access:access_expr } => {
+    lift(function (v) { return v && v $access; }, $monad)
   }
 
 
@@ -234,33 +234,20 @@ macro (?) {
    *     console.log(c?); // true
    *
    */
-  // a? => Maybe.is(a)
+  // a? => isValue(a)
   rule infix { $maybe:expr | } => {
-    Maybe.is($maybe)
+    isValue($maybe)
   }
 }
 
-macro liftable {
-  rule { $method:method_call } => {
-    function (value) { return value $method; }
-  }
-  rule { $key:property_access } => {
-    at($key)
-  }
+macro access_expr {
+  rule { $access:access ($args (,) ...) }
+  rule { $access:access }
 }
 
-macro method_call {
-  rule { . $name:ident ($args (,) ...) }
-  rule { [ $name:expr ] ($args (,) ...) }
-}
-
-macro property_access {
-  case { _ . $tok:ident } => {
-    return [makeValue(#{ $tok }.map(unwrapSyntax).join(''), #{ here })];
-  }
-  case { _ [ $subscript:expr ] } => {
-    return #{ $subscript }
-  }
+macro access {
+  rule { . $name:ident }
+  rule { [ $name:expr ] }
 }
 
 

@@ -175,6 +175,8 @@ function is(v1, v2) {
 }
 
 
+var isArray = Array.isArray;
+
 /**
  * Functors / Monads / Monoids
  */
@@ -225,13 +227,15 @@ function pure(applicative, value) {
     applicative = applicative.constructor;
   }
   if (applicative.resolve && applicative.reject) { // is Promise
-    value = Maybe(value);
-    return value.is() ?
-      applicative.resolve(value.get()) :
-      applicative.reject(value.isError() && value.getError());
+    return isValue(value) ?
+      applicative.resolve(assertValue(value)) :
+      applicative.reject(isError(value) && assertError(value));
   }
   if (applicative.of) { // is Applicative
     return applicative.of(value);
+  }
+  if (applicative.constructor.of) { // is Applicative Constructor
+    return applicative.constructor.of(value);
   }
   if (isArray(applicative)) { // is Array
     return value == null ? [] : [value];
@@ -261,146 +265,46 @@ function bind(fn, monad) {
 
 
 
-/**
- * Maybe
- */
-function Maybe(value) {
-  return value == null || value !== value ? MaybeNone :
-    value instanceof Maybe ? value :
-    value instanceof Error ? new MaybeError(value) :
-    new MaybeValue(value);
+
+function isMaybe(maybeMaybe) {
+  return maybeMaybe && maybeMaybe.or && maybeMaybe.is && maybeMaybe.get &&
+    maybeMaybe.map;
 }
 
-Maybe.of = Maybe;
-Maybe.is = function (maybe) {
-  return Maybe(maybe).is();
-};
-Maybe.isError = function (maybe) {
-  return Maybe(maybe).isError();
-};
-Maybe.or = curry(function (fallback, maybe) {
-  return Maybe(maybe).or(fallback);
-});
-Maybe.get = function (maybe) {
-  return Maybe(maybe).get();
-};
-Maybe.getError = function (maybe) {
-  return Maybe(maybe).getError();
-};
-Maybe['try'] = function(fn) { // TODO: handle curried fns
-  return arity(fn.length, function() {
-    try {
-      return Maybe(fn.apply(this, arguments));
-    } catch (error) {
-      return MaybeError(error);
-    }
-  });
+function isMaybeError(maybeMaybe) {
+  return maybeMaybe && maybeMaybe.isError && maybeMaybe.getError &&
+    maybeMaybe.map;
 }
 
-Maybe.prototype.toSource =
-Maybe.prototype.inspect = function() {
-  return this.toString();
+function valueOr(fallbackValue, maybeValue) {
+  return maybeValue == null ? fallbackValue :
+    isMaybe(maybeValue) ? maybeValue.or(fallbackValue) : maybeValue;
 }
 
-Maybe.prototype.of = Maybe;
-Maybe.prototype.is =
-Maybe.prototype.isError = function() {
-  return false;
-}
-Maybe.prototype.or = function(fallback) {
-  return fallback;
-}
-Maybe.prototype.get = function() {
-  throw new Error('Cannot get a value from ' + this);
-}
-Maybe.prototype.getError = function() {
-  throw new Error('Cannot get an error from ' + this);
-}
-Maybe.prototype.join =
-Maybe.prototype.map =
-Maybe.prototype.ap =
-Maybe.prototype.chain = function(fn) {
-  return this;
+function isValue(maybeValue) {
+  return isMaybe(maybeValue) ? maybeValue.is() : maybeValue != null;
 }
 
-function MaybeValue(value) {
-  if (this instanceof MaybeValue) {
-    this._value = value;
-  } else {
-    return new MaybeValue(value);
+function assertValue(maybeValue) {
+  if (maybeValue == null) {
+    throw new Error('Forced empty value: ' + maybeValue);
   }
+  return isMaybe(maybeValue) ? maybeValue.get() : maybeValue;
 }
-MaybeValue.prototype = Object.create(Maybe.prototype);
-MaybeValue.prototype.toString = function() {
-  return 'Maybe.Value ' + this._value;
-}
-MaybeValue.prototype.is = function() {
-  return true;
-}
-MaybeValue.prototype.or = function(fallback) {
-  return this._value;
-}
-MaybeValue.prototype.get = function() {
-  return this._value;
-}
-MaybeValue.prototype.equals = function(maybe) {
-  return maybe.is() && is(this._value, maybe._value);
-}
-MaybeValue.prototype.join = function() {
-  return this._value instanceof Maybe ? this._value : this;
-}
-MaybeValue.prototype.map = function(fn) {
-  return this.of(fn(this._value));
-}
-MaybeValue.prototype.ap = function(maybe) {
-  return maybe.map(this._value);
-}
-MaybeValue.prototype.chain = function(fn) {
-  return fn(this._value);
-}
-Maybe.Value = MaybeValue;
 
-function MaybeNone() {
-  return MaybeNone;
+function isError(maybeError) {
+  return isMaybeError(maybeError) ? maybeError.isError() : maybeError instanceof Error;
 }
-MaybeNone.prototype = Object.create(Maybe.prototype);
-MaybeNone.prototype.toString = function() {
-  return 'Maybe.None';
-}
-MaybeNone.prototype.equals = function(maybe) {
-  return maybe === MaybeNone;
-}
-MaybeNone.prototype.ap = function(maybe) {
-  return maybe.isError() ? maybe : MaybeNone;
-}
-var setPrototypeOf = Object.setPrototypeOf || function (obj, proto) {
-  obj.__proto__ = proto; // jshint ignore: line
-  return obj;
-}
-setPrototypeOf(MaybeNone, MaybeNone.prototype);
-Maybe.None = MaybeNone;
 
-function MaybeError(error) {
-  if (this instanceof MaybeError) {
-    this._error = error;
-  } else {
-    return new MaybeError(error);
+function assertError(maybeError) {
+  if (isMaybeError(maybeError)) {
+    return maybeError.getError();
   }
+  if (maybeError instanceof Error) {
+    return maybeError;
+  }
+  throw new Error('Forced error: ' + maybeError);
 }
-MaybeError.prototype = Object.create(Maybe.prototype);
-MaybeError.prototype.toString = function() {
-  return 'Maybe.Error ' + this._error;
-}
-MaybeError.prototype.isError = function() {
-  return true;
-}
-MaybeError.prototype.getError = function() {
-  return this._error;
-}
-MaybeError.prototype.equals = function(maybe) {
-  return maybe.isError() && is(this._error, maybe._error);
-}
-Maybe.Error = MaybeError;
 
 
 
@@ -412,13 +316,6 @@ Maybe.Error = MaybeError;
 var get = curry(function get(key, indexed) {
   return indexed && indexed[key];
 });
-
-var at = curry(Maybe['try'](function (key, indexed) {
-  return indexed[key];
-}));
-
-
-var isArray = Array.isArray;
 
 
 
@@ -438,10 +335,13 @@ global.ap = curry(ap);
 global.pure = curry(pure);
 global.bind = curry(bind);
 
-global.Maybe = Maybe;
-
 global.get = get;
-global.at = at;
+
+global.valueOr = curry(valueOr);
+global.isValue = isValue;
+global.assertValue = assertValue;
+global.isError = isError;
+global.assertError = assertError;
  /* jshint ignore: line */
 
 }.call(null,

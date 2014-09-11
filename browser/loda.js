@@ -12,7 +12,7 @@ function universalModule(module, undefined) { module = module || {}
 
 /* global arity, compose, composeRight, partial, partialRight,
           curry, curryRight, uncurry, isCurried,
-          lift, ap, pure, bind, Maybe, is */
+          lift, ap, pure, bind, is */
 
 
 
@@ -1077,6 +1077,159 @@ function promise(fn) {
 
 
 
+
+/**
+ * Maybe
+ */
+function Maybe(value) {
+  return value == null || value !== value ? MaybeNone :
+    value instanceof Maybe ? value :
+    value instanceof Error ? new MaybeError(value) :
+    new MaybeValue(value);
+}
+
+Maybe.of = Maybe;
+Maybe.is = function (maybe) {
+  return Maybe(maybe).is();
+};
+Maybe.isError = function (maybe) {
+  return Maybe(maybe).isError();
+};
+Maybe.or = curry(function (fallback, maybe) {
+  return Maybe(maybe).or(fallback);
+});
+Maybe.get = function (maybe) {
+  return Maybe(maybe).get();
+};
+Maybe.getError = function (maybe) {
+  return Maybe(maybe).getError();
+};
+Maybe['try'] = maybeTry;
+Maybe.at = curry(maybeTry(function (key, indexed) {
+  return indexed[key];
+}));
+
+function maybeTry(fn) { // TODO: handle curried fns
+  return arity(fn.length, function() {
+    try {
+      return Maybe(fn.apply(this, arguments));
+    } catch (error) {
+      return MaybeError(error);
+    }
+  });
+}
+
+
+Maybe.prototype.toSource =
+Maybe.prototype.inspect = function() {
+  return this.toString();
+}
+
+Maybe.prototype.of = Maybe;
+Maybe.prototype.is =
+Maybe.prototype.isError = function() {
+  return false;
+}
+Maybe.prototype.or = function(fallback) {
+  return fallback;
+}
+Maybe.prototype.get = function() {
+  throw new Error('Cannot get a value from ' + this);
+}
+Maybe.prototype.getError = function() {
+  throw new Error('Cannot get an error from ' + this);
+}
+Maybe.prototype.join =
+Maybe.prototype.map =
+Maybe.prototype.ap =
+Maybe.prototype.chain = function(fn) {
+  return this;
+}
+
+function MaybeValue(value) {
+  if (this instanceof MaybeValue) {
+    this._value = value;
+  } else {
+    return new MaybeValue(value);
+  }
+}
+MaybeValue.prototype = Object.create(Maybe.prototype);
+MaybeValue.prototype.toString = function() {
+  return 'Maybe.Value ' + this._value;
+}
+MaybeValue.prototype.is = function() {
+  return true;
+}
+MaybeValue.prototype.or = function(fallback) {
+  return this._value;
+}
+MaybeValue.prototype.get = function() {
+  return this._value;
+}
+MaybeValue.prototype.equals = function(maybe) {
+  return maybe.is() && is(this._value, maybe._value);
+}
+MaybeValue.prototype.join = function() {
+  return this._value instanceof Maybe ? this._value : this;
+}
+MaybeValue.prototype.map = function(fn) {
+  return this.of(fn(this._value));
+}
+MaybeValue.prototype.ap = function(maybe) {
+  return maybe.map(this._value);
+}
+MaybeValue.prototype.chain = function(fn) {
+  return fn(this._value);
+}
+Maybe.Value = MaybeValue;
+
+function MaybeNone() {
+  return MaybeNone;
+}
+MaybeNone.prototype = Object.create(Maybe.prototype);
+MaybeNone.prototype.toString = function() {
+  return 'Maybe.None';
+}
+MaybeNone.prototype.equals = function(maybe) {
+  return maybe === MaybeNone;
+}
+MaybeNone.prototype.ap = function(maybe) {
+  return maybe.isError() ? maybe : MaybeNone;
+}
+var setPrototypeOf = Object.setPrototypeOf || function (obj, proto) {
+  obj.__proto__ = proto; // jshint ignore: line
+  return obj;
+}
+setPrototypeOf(MaybeNone, MaybeNone.prototype);
+Maybe.None = MaybeNone;
+
+function MaybeError(error) {
+  if (this instanceof MaybeError) {
+    this._error = error;
+  } else {
+    return new MaybeError(error);
+  }
+}
+MaybeError.prototype = Object.create(Maybe.prototype);
+MaybeError.prototype.toString = function() {
+  return 'Maybe.Error ' + this._error;
+}
+MaybeError.prototype.isError = function() {
+  return true;
+}
+MaybeError.prototype.getError = function() {
+  return this._error;
+}
+MaybeError.prototype.equals = function(maybe) {
+  return maybe.isError() && is(this._error, maybe._error);
+}
+Maybe.Error = MaybeError;
+
+
+
+
+
+
 /**
  * Internal helper methods
  */
@@ -1203,6 +1356,8 @@ module.exports = loda = {
   'promise': curry(promise),
   'liftResult': curry(liftResult),
   'bindResult': curry(bindResult),
+
+  'Maybe': Maybe,
 }
 
 return module.exports; }
