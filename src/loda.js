@@ -908,6 +908,15 @@ var gteq = curryRight(argComparer(function (x, y) {
 }), 2);
 
 
+/**
+ * Indexed
+ * -------
+ */
+var get = curry(function (key, indexed) {
+  return indexed && indexed[key];
+});
+
+
 // sequence :: Monad m => [m a] -> m [a]
 function arrayM(monadList, monadType) {
   var iter = _iterator(monadList);
@@ -1341,6 +1350,8 @@ module.exports = loda = {
   'lteq': lteq,
   'gt': gt,
   'gteq': gteq,
+
+  'get': get,
 
   'reduceM': curry(reduceM, 2),
   'filterM': curry(filterM, 2),

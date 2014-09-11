@@ -304,18 +304,6 @@ function assertError(maybeError) {
 }
 
 
-
-/**
- * Indexed
- * -------
- */
-
-var get = curry(function get(key, indexed) {
-  return indexed && indexed[key];
-});
-
-
-
 global.arity = arity;
 global.compose = compose;
 global.composeRight = composeRight;
@@ -331,8 +319,6 @@ global.lift = curry(lift);
 global.ap = curry(ap);
 global.pure = curry(pure);
 global.bind = curry(bind);
-
-global.get = get;
 
 global.valueOr = curry(valueOr);
 global.isValue = isValue;

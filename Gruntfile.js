@@ -5,7 +5,7 @@ var Promise = require('promise');
 module.exports = function(grunt) {
   grunt.initConfig({
     jshint: {
-      all: ['src/*.js', 'resources/*.js'],
+      all: ['src/*.js'],
       options: {
         asi: true,
         curly: false,
