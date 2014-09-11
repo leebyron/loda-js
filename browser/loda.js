@@ -574,6 +574,8 @@ function concat(listOfLists) {
   });
 }
 
+var mapCat = curry(compose(concat, map));
+
 
 /**
  * Flatten
@@ -1322,6 +1324,7 @@ module.exports = loda = {
   'zip': curry(zip, 2),
   'unzip': unzip, // TODO: test
   'concat': concat,
+  'mapCat': mapCat,
   'flatten': flatten,
   'memoIterable': memoIterable,
   'join': join,

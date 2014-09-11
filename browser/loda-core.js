@@ -262,6 +262,8 @@ function bind(fn, monad) {
   // }
 }
 
+// TODO!!! Not accepting iterables is causing the bench runner to fail
+
 
 
 

@@ -2,15 +2,16 @@ var benchmark = require('benchmark');
 var child = require('child_process');
 var pad = require('pad');
 var Promise = require('promise');
+require('../src/loda-core.js');
 var _ = require('../');
 
 var exec = Promise.denodeify(child.exec);
 
 function runBenchmarks(config) {
-  return _.bind(
-    _.compose(
+  return bind(
+    compose(
       _.doall(console.log),
-      _.bind(_.map(testResult)),
+      _.mapCat(_.map(testResult)), // TODO: make bind work for lazy iterables
       mapTestSuites(config.tests)
     ),
     getLibraries(config.libraries)
@@ -20,10 +21,10 @@ function runBenchmarks(config) {
 // TODO: convert to Promise
 function testResult(test) {
   return test.name + '\n' +
-    _.string(_.map(function (testResult) {
-      return pad(testResult.name, 12) + ': ' +
-        pad(15, testResult.hz.toFixed(2)) +
-        ' +/- ' + testResult.stats.rme.toFixed(2) + '% op/s\n'
+    _.string(_.map(function (result) {
+      return pad(result.name, 12) + ': ' +
+        pad(15, result.hz.toFixed(2)) +
+        ' +/- ' + result.stats.rme.toFixed(2) + '% op/s\n'
     }, test.run()));
 }
 
@@ -40,10 +41,10 @@ function getLibraries(libInfo) {
   return _.mapValM(function (dep) {
     var module = requireMaybe(dep.name);
     if (module.is()) {
-      return _.pure(Promise, module);
+      return pure(Promise, module);
     } else {
       var npmName = dep.name + '@' + dep.version;
-      return _.bind(function (lols) {
+      return bind(function (lols) {
         return requireMaybe(dep.name);
       }, exec('npm install ' + npmName));
     }
@@ -52,7 +53,7 @@ function getLibraries(libInfo) {
 
 var requireMaybe = _.Maybe.try(require);
 
-var mapTestSuites = _.curry(function (tests, libs) {
+var mapTestSuites = curry(function (tests, libs) {
   return _.map(function (test) {
     var testName = test[0];
     var testDetail = test[1];
