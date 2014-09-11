@@ -284,7 +284,10 @@ function _iterable(maybeIterable) {
   if (maybeIterable.length > 0) {
     return new IndexedIterable(maybeIterable);// indexedIterable(maybeIterable);
   }
-  return keyedIterable(maybeIterable);
+  if (maybeIterable.constructor === Object) {
+    return keyedIterable(maybeIterable);
+  }
+  throw new Error('Not iterable: ' + maybeIterable);
 }
 
 // Internal iterator helpers

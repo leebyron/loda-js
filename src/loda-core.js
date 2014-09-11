@@ -312,21 +312,6 @@ function bind(fn, monad) {
 }
 
 
-var ITERATOR_SYMBOL = global.Symbol ? global.Symbol.iterator : '@@_iterator';
-var ITERATOR_DONE = { value: undefined, done: true };
-var EMPTY_ITERATOR = {
-  next: function () {
-    return ITERATOR_DONE;
-  }
-};
-function valueIterator(value) {
-  var called = false;
-  return {
-    next: function () {
-      return called ? ITERATOR_DONE : (called = true) && { value: value, done: false };
-    }
-  }
-}
 
 /**
  * Maybe
@@ -422,9 +407,6 @@ MaybeValue.prototype.ap = function(maybe) {
 MaybeValue.prototype.chain = function(fn) {
   return fn(this._value);
 }
-MaybeValue.prototype[ITERATOR_SYMBOL] = function() {
-  return valueIterator(this._value);
-}
 Maybe.Value = MaybeValue;
 
 function MaybeNone() {
@@ -441,9 +423,6 @@ MaybeNone.prototype.equals = function(maybe) {
 }
 MaybeNone.prototype.ap = function(maybe) {
   return maybe.isError() ? maybe : MaybeNone;
-}
-MaybeNone.prototype[ITERATOR_SYMBOL] = function() {
-  return EMPTY_ITERATOR;
 }
 var setPrototypeOf = Object.setPrototypeOf || function (obj, proto) {
   obj.__proto__ = proto; // jshint ignore: line
@@ -473,9 +452,6 @@ MaybeError.prototype.getError = function() {
 }
 MaybeError.prototype.equals = function(maybe) {
   return maybe.isError() && is(this._error, maybe._error);
-}
-MaybeError.prototype[ITERATOR_SYMBOL] = function() {
-  return EMPTY_ITERATOR;
 }
 Maybe.Error = MaybeError;
 

@@ -1082,13 +1082,6 @@ describe 'loda', ->
           expect(or123 none).toEqual '123'
           expect(or123 error).toEqual '123'
 
-      describe 'behaves as a list of one', ->
-
-        it 'can be flattened', ->
-          some = Maybe.Value 'abc'
-          none = Maybe.None
-          expect(array flatten some).toEqual ['abc']
-          expect(array flatten none).toEqual []
 
       describe 'setoid', ->
 
