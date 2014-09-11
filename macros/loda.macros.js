@@ -241,7 +241,7 @@ macro (?) {
 }
 
 macro access_expr {
-  rule { $access:access ($args (,) ...) }
+  rule { $access:access ($args ...) }
   rule { $access:access }
 }
 
@@ -309,12 +309,68 @@ operator (><) 14 right { $l, $r } => #{ compose($l, $r) }
 
 
 /**
- * Call
- * ====
+ * Curried function
+ * ================
  *
- * Loose associativity call. Just sugar for (callableExpression)(arg)
+ * Define a function which is curried. See `loda-core.curry`.
+ *
+ *     function@ curriedAdd(v1, v2) {
+ *       return v1 + v2;
+ *     }
+ *     curriedAdd(1)()()(2) // 3
+ *
+ *
+ * It would be too bold to make all functions curried. If you want that,
+ * write a local macro that looks like:
+ *
+ *     let function = macro {
+ *       case {_ $name ($params ...) {$body ...} } => {
+ *         function@ $name ($params ...) {$body ...}
+ *       }
+ *     }
+ *
+ * Note: this results in a variable declaration, so `function$` is not
+ * [hoisted](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Scope_Cheatsheet#Hoisting)
+ * like regular functions. Be aware of this limitation when defining
+ * curried functions.
  */
-operator ($) 1 left { $callable, $argument } => #{ ($callable)($argument) }
+macro (function@@) {
+  rule { $name ($params ...) {$body ...} } => {
+    var $name = curryRight(function $name ($params ...) {$body ...});
+  }
+}
+
+macro (function@) {
+  rule { $name ($params ...) {$body ...} } => {
+    var $name = curry(function $name ($params ...) {$body ...});
+  }
+}
+
+
+
+/**
+ * Partially apply functions
+ * =========================
+ *
+ * Partially apply arguments to a function in a form that looks like a function
+ * call. See `loda-core.partial`.
+ *
+ * `@add(1)(2)` is shorthand for `add(1, 2)`
+ *
+ * `@@add(1)(2)` is shorthand for `add(2, 1)`
+ *
+ */
+macro (@@) {
+  rule { $name:ident ( $args ... ) } => {
+    partialRight($name, $args ...)
+  }
+}
+
+macro (@) {
+  rule { $name:ident ( $args ... ) } => {
+    partial($name, $args ...)
+  }
+}
 
 
 
@@ -324,16 +380,20 @@ operator ($) 1 left { $callable, $argument } => #{ ($callable)($argument) }
  *
  * Call a function using infix notation.
  *
- * `1 @add 2` is shorthand for `add(1, 2)`
+ * `1 <add> 2` is shorthand for `add(1, 2)`
  *
  * Note to Haskell fans:
  *
  * "``" collides with JavaScript's template string literals.
+ *
+ * TODO: ensure this doesn't collide with JSX
  */
-macro (@) {
-  rule infix { $first:expr | $func:ident $second:expr } => {
+macro (<) {
+  rule infix { $first:expr | $func:ident > $second:expr } => {
     ($func)($first, $second)
   }
+  // Leave lt alone
+  rule {} => { $[<] }
 }
 
 
@@ -464,47 +524,21 @@ macro return_do {
 
 
 
-/**
- * Curried function
- * ================
- *
- * Define a function which is curried (see `loda.curry`).
- *
- * It would be too bold to make all functions curried. If you want that,
- * write a local macro that looks like:
- *
- *     let function = macro {
- *       case {_ $name ($params ...) {$body ...} } => {
- *         function$ $name ($params ...) {$body ...}
- *       }
- *     }
- *
- * Note: this results in a variable declaration, so `function$` is not
- * [hoisted](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Scope_Cheatsheet#Hoisting)
- * like regular functions. Be aware of this limitation when defining
- * curried functions.
- */
-macro function$ {
-  rule { $name ($params ...) {$body ...} } => {
-    var $name = curry(function $name ($params ...) {$body ...});
-  }
-}
-
-
-
 export (!)
 export (?:)
 export (?)
 export (if)
 
 export (><)
-export ($)
-export (@)
 
+export (function@)
+export (function@@)
+export (@)
+export (@@)
+
+export (<)
 export (<$>)
 export (<*>)
 export (>=>)
 export (<=<)
-export $do
-
-export function$
+export ($do)

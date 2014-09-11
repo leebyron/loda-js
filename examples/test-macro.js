@@ -235,7 +235,31 @@ console.log(y); // null
 
 // Calling functions infix style:
 console.log(
-  1 @add 2
+  3,
+  1 <add> 2
+);
+
+// Comparisons are fine
+console.log(
+  true,
+  1 < 2 && 3 > 1
+);
+
+// Partial application
+function whizBang(a, b, c) {
+  return (a + b) * c;
+}
+
+var whiz10And12 = @whizBang(10, 12);
+console.log(
+  286,
+  whiz10And12(13)
+);
+
+var whizSomethingWith10And12 = @@whizBang(10, 12);
+console.log(
+  276,
+  whizSomethingWith10And12(13)
 );
 
 // Infix lift and ap
@@ -251,23 +275,23 @@ function aa(x) {
   return x + 1;
 }
 
-function$ bb(n, y) {
+function@ bb(n, y) {
   return y * 2 + n;
 }
 
 var e = 1;
 console.log(
-  bb(10) >< aa $ e
+  14,
+  (bb(10) >< aa)(e)
 );
 
 1 >=> aa >=> bb(10) >=> (response) => {
   console.log("JSON Response!", response);
-}
+};
 
-var cc = function(response) {
+(response) => {
   console.log("JSON Response!", response);
-}
-cc <=< bb(10) <=< aa <=< 1
+} <=< bb(10) <=< aa <=< 1
 
 
 
@@ -329,4 +353,5 @@ var logged2 = $do {
 }
 
 logged2.then(function (value) { console.log('empty promise?', value) })
-      .catch(function (error) { console.log('Error:', error) });
+       .catch(function (error) { console.log('Error:', error) });
+
