@@ -1,6 +1,6 @@
 /* global module, define, LIBNAME: true */
 
-function universalModule(module) { module = module || {}
+function universalModule(module, undefined) { module = module || {}
   "MODULE"
 return module.exports; }
 

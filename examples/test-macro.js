@@ -14,6 +14,7 @@ macro (=>) {
 }
 
 
+require('./src/loda-core.js');
 require('./').install(global);
 var Promise = require('promise');
 
@@ -277,7 +278,7 @@ var list = $do {
   y <- [x, x];
   return [y * 2, y * 3];
 }
-console.log(array(list));
+console.log(list);
 
 
 // Test with some IO-ish functions.

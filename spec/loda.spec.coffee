@@ -2,11 +2,13 @@ require('jasmine-check').install()
 
 describe 'loda', ->
 
+  # clean this up later
+  loda = require('../src/loda-core.js')
   loda = require('../')
   loda.install global
 
   it 'was installed', ->
-    expect(curry).toBe loda.curry
+    expect(contextify).toBe loda.contextify
 
 
   describe 'function manipulation', ->
@@ -65,14 +67,14 @@ describe 'loda', ->
       it 'returns a function of the same arity', ->
         fn = (a, b, c) -> [a, b, c].join '-'
         curried = curry fn
-        rCurried = curry.right fn
+        rCurried = curryRight fn
         expect(curried.length).toBe fn.length
         expect(rCurried.length).toBe fn.length
 
       it 'returns a function of a given arity', ->
         fn = (a, b, c) -> [a, b, c].join '-'
         curried = curry fn, 2
-        rCurried = curry.right fn, 2
+        rCurried = curryRight fn, 2
         expect(curried.length).toBe 2
         expect(rCurried.length).toBe 2
 
@@ -85,20 +87,20 @@ describe 'loda', ->
 
       it 'curries a function from the right', ->
         fn = (a, b, c) -> [a, b, c].join '-'
-        rCurried = curry.right fn
+        rCurried = curryRight fn
         expect(rCurried('A')('B', 'C')).toBe 'B-C-A'
         expect(rCurried('A', 'B')('C')).toBe 'C-A-B'
         expect(rCurried('A')('B')('C')).toBe 'C-B-A'
 
       it 'can be re-curried', ->
         fn = (a, b, c) -> [a, b, c].join '-'
-        rCurried = curry.right fn
+        rCurried = curryRight fn
         curried = curry rCurried
         expect(curried('A')('B')('C')).toBe 'A-B-C'
 
       it 'can be re-curried once partially applied', ->
         fn = (a, b, c) -> [a, b, c].join '-'
-        rCurried = curry.right fn
+        rCurried = curryRight fn
         withA = rCurried('A')
         curried = curry withA
         expect(curried('B')('C')).toBe 'B-C-A'
@@ -106,7 +108,7 @@ describe 'loda', ->
       it 'can be detected as curried', ->
         fn = (a, b, c) -> [a, b, c].join '-'
         curried = curry(fn)
-        rCurried = curry.right(fn)
+        rCurried = curryRight(fn)
         expect(isCurried fn).toBe false
         expect(isCurried curried).toBe true
         expect(isCurried rCurried).toBe true
@@ -125,7 +127,7 @@ describe 'loda', ->
         add5 = add 5
         mul2 = mul 2
         sub3 = sub 3
-        rComposed = compose.right sub3, mul2, add5
+        rComposed = composeRight sub3, mul2, add5
         expect(rComposed 10).toBe add5 mul2 sub3 10
 
       it 'returns a function with arity of the last fn', ->
@@ -133,7 +135,7 @@ describe 'loda', ->
         sub3 = sub 3
         composed = compose sub3, mul2, add
         expect(composed.length).toBe add.length
-        rComposed = compose.right add, mul2, sub3
+        rComposed = composeRight add, mul2, sub3
         expect(rComposed.length).toBe add.length
 
 
@@ -146,20 +148,20 @@ describe 'loda', ->
 
       it 'partially applies arguments from the right', ->
         fn = (a, b, c) -> [a, b, c].join '-'
-        withAB = partial.right fn, 'A', 'B'
+        withAB = partialRight fn, 'A', 'B'
         expect(withAB 'C').toBe 'C-A-B'
 
       it 'returns fn if no arguments are provided', ->
         fn = (a, b, c) -> [a, b, c].join '-'
         withNothing = partial fn
-        rWithNothing = partial.right fn
+        rWithNothing = partialRight fn
         expect(withNothing).toBe fn
         expect(rWithNothing).toBe fn
 
       it 'may partially apply more arguments than the fn arity', ->
         fn = (a, b, c) -> [a, b, c].join '-'
         withABCD = partial fn, 'A', 'B', 'C', 'D'
-        rWithABCD = partial.right fn, 'A', 'B', 'C', 'D'
+        rWithABCD = partialRight fn, 'A', 'B', 'C', 'D'
         expect(withABCD()).toBe 'A-B-C'
         expect(rWithABCD()).toBe 'A-B-C'
 
