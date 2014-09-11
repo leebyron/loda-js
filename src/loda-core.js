@@ -28,13 +28,16 @@ function composeRight() {
 
 /**
  * Partial
+ *
+ * http://jsperf.com/partial-application
  */
 
 function partial(fn) {
   if (arguments.length === 1) return fn;
   var partialArgs = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) partialArgs[$_i - 1] = arguments[$_i];
   return arity(fn.length - partialArgs.length, function partialFn() {
-    return fn.apply(this, concatArgs(partialArgs, arguments));
+    var restArgs = new Array(arguments.length); for ($_i = 0; $_i < arguments.length; ++$_i) restArgs[$_i] = arguments[$_i];
+    return fn.apply(this, concatArgs(partialArgs, restArgs));
   });
 }
 
@@ -42,8 +45,9 @@ function partialRight(fn) {
   if (arguments.length === 1) return fn;
   var partialArgs = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) partialArgs[$_i - 1] = arguments[$_i];
   return arity(fn.length - partialArgs.length, function partialFn() {
-    return fn.apply(this, concatArgs(arguments, partialArgs));
-  })
+    var restArgs = new Array(arguments.length); for ($_i = 0; $_i < arguments.length; ++$_i) restArgs[$_i] = arguments[$_i];
+    return fn.apply(this, concatArgs(restArgs, partialArgs));
+  });
 }
 
 function concatArgs(indexed1, indexed2) {
@@ -78,13 +82,13 @@ function getArityFn(length) {
 }
 
 function makeArityFn(length) {
-  var arr = new Array(length), ii = 0;
-  while (ii < length) {
-    arr[ii] = '_' + ii++;
+  var args = new Array(length);
+  while (length--) {
+    args[length] = '_' + length;
   }
   return new Function( /* jshint ignore: line */
     'fn',
-    'return function('+arr.join(',')+'){return fn.apply(this, arguments);}'
+    'return function('+args.join(',')+'){return fn.apply(this, arguments);}'
   );
 }
 
