@@ -84,7 +84,7 @@ function getArityFn(length) {
 function makeArityFn(length) {
   var args = new Array(length);
   while (length--) {
-    args[length] = '_' + length;
+    args[length] = 'a' + length;
   }
   return new Function( /* jshint ignore: line */
     'fn',
@@ -101,13 +101,13 @@ function makeArityFn(length) {
 
 function curry(fn, arity) {
   arity = arity || fn.length;
-  return arity <= 1 ? fn :
+  return arity === 0 ? fn :
     getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, uncurry(fn));
 }
 
 function curryRight(fn, arity) {
   arity = arity || fn.length;
-  return arity <= 1 ? fn :
+  return arity === 0 ? fn :
     getCurryRightFn(arity)(getCurryRightFn, CURRY_SYMBOL, uncurry(fn));
 }
 
@@ -135,31 +135,31 @@ function getCurryRightFn(arity) {
 
 function makeCurryFn(arity, fromRight) {
   var cases = '';
-  var curriedArgs = ['_0'];
+  var curriedArgs = ['a0'];
   for (var ii = 1; ii < arity; ii++) {
     cases +=
-      '      case ' + ii + ': return getCurryFn(' + (arity - ii) + ')(getCurryFn, curriedSymbol, function() {\n'+
-      '        var args = ['+curriedArgs.join(',')+'];\n'+
+      'case ' + ii + ':return c(' + (arity - ii) + ')(c,s,function(){' +
+        'var a=['+curriedArgs.join(',')+'];' +
       (fromRight ?
-      '        for (var i = arguments.length - 1; i >= 0; i--) args.unshift(arguments[i]);\n' :
-      '        for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);\n')+
-      '        return fn.apply(this, args);\n'+
-      '      });\n';
-    curriedArgs.push('_' + ii);
+        'for (var i = arguments.length - 1; i >= 0; i--) a.unshift(arguments[i]);' :
+        'for (var i = 0; i < arguments.length; i++) a.push(arguments[i]);') +
+        'return fn.apply(this, a);' +
+      '});';
+    curriedArgs.push('a' + ii);
   }
   return new Function( /* jshint ignore: line */
-    'getCurryFn',
-    'curriedSymbol',
+    'c',
+    's',
     'fn',
-    '  function curried('+curriedArgs.join(',')+') {\n'+
-    '    switch (arguments.length) {\n'+
-    '      case 0: return curried;\n'+
-    cases +
-    '    }\n'+
-    '    return fn.apply(this, arguments);\n'+
-    '  }\n'+
-    '  curried[curriedSymbol] = fn;\n'+
-    '  return curried;'
+    'var cfn = function curried( '+curriedArgs.join(', ')+' ) {\n' +
+      'switch (arguments.length) {' +
+        'case 0:return cfn;' +
+        cases +
+      '}' +
+      'return fn.apply(this, arguments);' +
+    '};' +
+    'cfn[s] = fn;' +
+    'return cfn;'
   );
 }
 
