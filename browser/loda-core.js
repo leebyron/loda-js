@@ -15,9 +15,7 @@ function arity(length, fn) {
 var ARITY_CACHE = [];
 
 function getArityFn(length) {
-  return ARITY_CACHE[length] || (ARITY_CACHE[length] =
-    new Function('fn', makeArityFn(length)) /* jshint ignore: line */
-  );
+  return ARITY_CACHE[length] || (ARITY_CACHE[length] = makeArityFn(length));
 }
 
 function makeArityFn(length) {
@@ -25,8 +23,10 @@ function makeArityFn(length) {
   while (ii < length) {
     arr[ii] = '_' + ii++;
   }
-  return 'return function('+arr.join(',')+'){\n  '+
-    'return fn.apply(this, arguments);\n}';
+  return new Function( /* jshint ignore: line */
+    'fn',
+    'return function('+arr.join(',')+'){return fn.apply(this, arguments);}'
+  );
 }
 
 
@@ -38,16 +38,14 @@ function makeArityFn(length) {
 
 function curry(fn, arity) {
   arity = arity || fn.length;
-  return arity > 1 ?
-    getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, uncurry(fn)) :
-    fn;
+  return arity <= 1 ? fn :
+    getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, uncurry(fn));
 }
 
 function curryRight(fn, arity) {
   arity = arity || fn.length;
-  return arity > 1 ?
-    getCurryRightFn(arity)(getCurryRightFn, CURRY_SYMBOL, uncurry(fn)) :
-    fn;
+  return arity <= 1 ? fn :
+    getCurryRightFn(arity)(getCurryRightFn, CURRY_SYMBOL, uncurry(fn));
 }
 
 function isCurried(fn) {
@@ -55,61 +53,41 @@ function isCurried(fn) {
 }
 
 function uncurry(fn) {
-  return isCurried(fn) ? fn[CURRY_SYMBOL] : fn;
+  return fn[CURRY_SYMBOL] || fn;
 }
 
 // Internal
 
-var CURRY_SYMBOL = global.Symbol ? global.Symbol() : '@__curried__@';
+var CURRY_SYMBOL = global.Symbol ? global.Symbol() : '@@_curried';
 var CURRY_CACHE = [];
 var CURRY_RIGHT_CACHE = [];
 
 function getCurryFn(arity) {
-  return CURRY_CACHE[arity] || (CURRY_CACHE[arity] = makeCurryFn(arity));
+  return CURRY_CACHE[arity] || (CURRY_CACHE[arity] = makeCurryFn(arity, false));
 }
 
 function getCurryRightFn(arity) {
-  return CURRY_RIGHT_CACHE[arity] || (CURRY_RIGHT_CACHE[arity] = makeCurryRightFn(arity));
+  return CURRY_RIGHT_CACHE[arity] || (CURRY_RIGHT_CACHE[arity] = makeCurryFn(arity, true));
 }
 
-function makeCurryFn(arity) {
+function makeCurryFn(arity, fromRight) {
   var cases = '';
   var curriedArgs = ['_0'];
   for (var ii = 1; ii < arity; ii++) {
     cases +=
       '      case ' + ii + ': return getCurryFn(' + (arity - ii) + ')(getCurryFn, curriedSymbol, function() {\n'+
       '        var args = ['+curriedArgs.join(',')+'];\n'+
-      '        for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);\n'+
+      (fromRight ?
+      '        for (var i = arguments.length - 1; i >= 0; i--) args.unshift(arguments[i]);\n' :
+      '        for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);\n')+
       '        return fn.apply(this, args);\n'+
       '      });\n';
     curriedArgs.push('_' + ii);
   }
-  return new Function('getCurryFn', 'curriedSymbol', 'fn', /* jshint ignore: line */
-    '  function curried('+curriedArgs.join(',')+') {\n'+
-    '    switch (arguments.length) {\n'+
-    '      case 0: return curried;\n'+
-    cases +
-    '    }\n'+
-    '    return fn.apply(this, arguments);\n'+
-    '  }\n'+
-    '  curried[curriedSymbol] = fn;\n'+
-    '  return curried;'
-  );
-}
-
-function makeCurryRightFn(arity) {
-  var cases = '';
-  var curriedArgs = ['_0'];
-  for (var ii = 1; ii < arity; ii++) {
-    cases +=
-      '      case ' + ii + ': return getCurryFn(' + (arity - ii) + ')(getCurryFn, curriedSymbol, function() {\n'+
-      '        var args = ['+curriedArgs.join(',')+'];\n'+
-      '        for (var i = arguments.length - 1; i >= 0; i--) args.unshift(arguments[i]);\n'+
-      '        return fn.apply(this, args);\n'+
-      '      });\n';
-    curriedArgs.push('_' + ii);
-  }
-  return new Function('getCurryFn', 'curriedSymbol', 'fn', /* jshint ignore: line */
+  return new Function( /* jshint ignore: line */
+    'getCurryFn',
+    'curriedSymbol',
+    'fn',
     '  function curried('+curriedArgs.join(',')+') {\n'+
     '    switch (arguments.length) {\n'+
     '      case 0: return curried;\n'+
@@ -192,7 +170,7 @@ function is(v1, v2) {
     v1 === 0 && v2 === 0 && 1 / v1 === 1 / v2 ||
     v1 === v2 ||
     v1 !== v1 && v2 !== v2 ||
-    v1 && typeof v1.equals === 'function' && v1.equals(v2)
+    !!v1 && typeof v1.equals === 'function' && v1.equals(v2)
   );
 }
 
@@ -208,57 +186,32 @@ function is(v1, v2) {
 
 // lift :: (a -> b) -> M a -> M b
 function lift(fn, functor) {
-  if (functor == null) {
-    return functor;
-  }
-  if (isCurried(fn) && fn.length > 1 && functor.chain) {
-    return bind(function (value) {
-      return pure(functor, curry(partial(uncurry(fn), value), fn.length - 1));
-    }, functor);
-  }
-  if (functor.map && !isArray(functor)) { // is Functor
-    return functor.map(fn);
-  }
-  if (functor.ap) { // is Apply
-    return ap(pure(functor, fn), functor);
-  }
-  if ((functor.chain && functor.of) || functor.then) { // is Monad
-    return bind(function (a) { return pure(functor, fn(a)); }, functor);
-  }
-  // Hold the monadic property that lift should return a value of the same type,
-  // so lifting an Array should return an Array, not an Iterable.
-  if (isArray(functor)) {
-    return functor.map(fn);
-  }
-  // TODO: figure out the best way to extend this to iterable objects.
-  // Other iterables are just going to be rule-breakers for the moment.
-  // if (isIterable(functor)) { // is Iterable
-  //   return map(fn, functor);
-  // }
-  // Treat raw values as a pseudo-Maybe.
-  return fn(functor);
+  return  (
+    functor == null ? functor : // Empty raw value
+    isCurried(fn) && fn.length > 1 && functor.chain ? // Create an Apply // TODO: should functor.then and isArray be included here?
+      bind(function (value) {
+        return pure(functor, curry(partial(uncurry(fn), value), fn.length - 1));
+      }, functor) :
+    functor.map ? functor.map(fn) : // Functor
+    functor.ap ? ap(pure(functor, fn), functor) : // Apply
+    functor.chain && functor.of || functor.then ? // is Monad
+      bind(function (value) { return pure(functor, fn(value)); }, functor) :
+    fn(functor) // Raw value
+  );
 }
-
-
-var isArray = Array.isArray;
 
 
 
 // TODO: handle curried case
 // AKA <*>
 function ap(appFn, appVal) {
-  if (appFn == null || appVal == null) {
-    return null;
-  }
-  if (appFn.ap) { // is Apply
-    return appFn.ap(appVal);
-  }
-  // is Chain, Promise, or Iterable --- iterables come later?
-  if (appFn.chain || appFn.then || isArray(appFn)) { // TODO: handle iterable case
-    return bind(function (fn) { return lift(fn, appVal); }, appFn);
-  }
-  // Treat raw values as pseudo-Maybe
-  return appFn(appVal);
+  return (
+    appFn == null || appVal == null ? null : // Empty raw value
+    appFn.ap ? appFn.ap(appVal) : // Apply
+    appFn.chain || appFn.then || isArray(appFn) ? // Monad (TODO: match iterables)
+      bind(function (fn) { return lift(fn, appVal); }, appFn) :
+    appFn(appVal) // Raw value
+  );
 }
 
 // pure :: A<any> -> V -> A<V>
@@ -272,7 +225,7 @@ function pure(applicative, value) {
     applicative = applicative.constructor;
   }
   if (applicative.resolve && applicative.reject) { // is Promise
-    value instanceof Maybe || (value = Maybe(value)); // TODO: Maybe idempotent
+    value = Maybe(value);
     return value.is() ?
       applicative.resolve(value.get()) :
       applicative.reject(value.isError() && value.getError());
@@ -281,7 +234,7 @@ function pure(applicative, value) {
     return applicative.of(value);
   }
   if (isArray(applicative)) { // is Array
-    return [value];
+    return value == null ? [] : [value];
   }
   // TODO: handle this...
   // if (isIterable(applicative)) { // is Iterable
@@ -293,25 +246,17 @@ function pure(applicative, value) {
 
 // TODO: accept multiple args and do the apply chaining for us
 function bind(fn, monad) {
-  if (monad == null) {
-    return monad;
-  }
-  if (monad.chain) { // is Chain
-    return monad.chain(fn);
-  }
-  if (monad.then) { // is Promise
-    return monad.then(fn);
-  }
-  if (isArray(monad)) { // is Array
-    return Array.prototype.concat.apply([], monad.map(fn));
-  }
-
+  return (
+    monad == null ? monad : // Empty raw value
+    monad.chain ? monad.chain(fn) : // Monad
+    monad.then ? monad.then(fn) : // Promise
+    isArray(monad) ? Array.prototype.concat.apply([], monad.map(fn)) : // Array
+    fn(monad) // Raw value
+  );
   // TODO: figure out how to model iterables
   // if (isIterable(monad)) { // is Iterable
   //   return concat(map(fn, monad));
   // }
-  // Treat raw values as a pseudo-Maybe.
-  return fn(monad);
 }
 
 
@@ -352,6 +297,11 @@ Maybe['try'] = function(fn) { // TODO: handle curried fns
   });
 }
 
+Maybe.prototype.toSource =
+Maybe.prototype.inspect = function() {
+  return this.toString();
+}
+
 Maybe.prototype.of = Maybe;
 Maybe.prototype.is =
 Maybe.prototype.isError = function() {
@@ -381,9 +331,7 @@ function MaybeValue(value) {
   }
 }
 MaybeValue.prototype = Object.create(Maybe.prototype);
-MaybeValue.prototype.toString =
-MaybeValue.prototype.toSource =
-MaybeValue.prototype.inspect = function() {
+MaybeValue.prototype.toString = function() {
   return 'Maybe.Value ' + this._value;
 }
 MaybeValue.prototype.is = function() {
@@ -416,9 +364,7 @@ function MaybeNone() {
   return MaybeNone;
 }
 MaybeNone.prototype = Object.create(Maybe.prototype);
-MaybeNone.prototype.toString =
-MaybeNone.prototype.toSource =
-MaybeNone.prototype.inspect = function() {
+MaybeNone.prototype.toString = function() {
   return 'Maybe.None';
 }
 MaybeNone.prototype.equals = function(maybe) {
@@ -442,9 +388,7 @@ function MaybeError(error) {
   }
 }
 MaybeError.prototype = Object.create(Maybe.prototype);
-MaybeError.prototype.toString =
-MaybeError.prototype.toSource =
-MaybeError.prototype.inspect = function() {
+MaybeError.prototype.toString = function() {
   return 'Maybe.Error ' + this._error;
 }
 MaybeError.prototype.isError = function() {
@@ -473,6 +417,8 @@ var at = curry(Maybe['try'](function (key, indexed) {
   return indexed[key];
 }));
 
+
+var isArray = Array.isArray;
 
 
 
