@@ -1,4 +1,66 @@
 /**
+ * Composition
+ */
+// TODO: if you compose curried functions together, sum the lengths and return a
+// curried function of the total length.
+// If any function "upstream" is curried and has a length > 1, apply arguments to
+// it first.
+function compose(fn2, fn1) {
+  var numFns = arguments.length - 1;
+  if (numFns === 0) return fn2;
+  var firstFn = arguments[numFns];
+  var restFns = new Array(numFns); for (var $_i = 0; $_i < numFns; ++$_i) restFns[$_i] = arguments[$_i];
+  return arity(firstFn.length, function composedFn() {
+    var result = firstFn.apply(this, arguments);
+    var ii = numFns;
+    while (ii--) {
+      result = restFns[ii].call(this, result);
+    }
+    return result;
+  });
+}
+
+function composeRight() {
+  return compose.apply(this, Array.prototype.reverse.call(arguments));
+}
+
+
+
+/**
+ * Partial
+ */
+
+function partial(fn) {
+  if (arguments.length === 1) return fn;
+  var partialArgs = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) partialArgs[$_i - 1] = arguments[$_i];
+  return arity(fn.length - partialArgs.length, function partialFn() {
+    return fn.apply(this, concatArgs(partialArgs, arguments));
+  });
+}
+
+function partialRight(fn) {
+  if (arguments.length === 1) return fn;
+  var partialArgs = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) partialArgs[$_i - 1] = arguments[$_i];
+  return arity(fn.length - partialArgs.length, function partialFn() {
+    return fn.apply(this, concatArgs(arguments, partialArgs));
+  })
+}
+
+function concatArgs(indexed1, indexed2) {
+  var len1 = indexed1.length;
+  var result = new Array(len1 + indexed2.length);
+  for (var ii = 0; ii < len1; ii++) {
+    result[ii] = indexed1[ii];
+  }
+  for (; ii < result.length; ii++) {
+    result[ii] = indexed2[ii - len1];
+  }
+  return result;
+}
+
+
+
+/**
  * Arity
  */
 
@@ -99,68 +161,9 @@ function makeCurryFn(arity, fromRight) {
 
 
 
-
-
 /**
- * Composition
+ * Functors / Monads / Monoids
  */
-// TODO: if you compose curried functions together, sum the lengths and return a
-// curried function of the total length.
-// If any function "upstream" is curried and has a length > 1, apply arguments to
-// it first.
-function compose(fn2, fn1) {
-  var numFns = arguments.length - 1;
-  if (numFns === 0) return fn2;
-  var firstFn = arguments[numFns];
-  var restFns = new Array(numFns); for (var $_i = 0; $_i < numFns; ++$_i) restFns[$_i] = arguments[$_i];
-  return arity(firstFn.length, function composedFn() {
-    var result = firstFn.apply(this, arguments);
-    var ii = numFns;
-    while (ii--) {
-      result = restFns[ii].call(this, result);
-    }
-    return result;
-  });
-}
-
-function composeRight() {
-  return compose.apply(this, Array.prototype.reverse.call(arguments));
-}
-
-
-
-/**
- * Partial
- */
-
-function partial(fn) {
-  if (arguments.length === 1) return fn;
-  var partialArgs = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) partialArgs[$_i - 1] = arguments[$_i];
-  return arity(fn.length - partialArgs.length, function partialFn() {
-    return fn.apply(this, concatArgs(partialArgs, arguments));
-  });
-}
-
-function partialRight(fn) {
-  if (arguments.length === 1) return fn;
-  var partialArgs = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) partialArgs[$_i - 1] = arguments[$_i];
-  return arity(fn.length - partialArgs.length, function partialFn() {
-    return fn.apply(this, concatArgs(arguments, partialArgs));
-  })
-}
-
-function concatArgs(indexed1, indexed2) {
-  var len1 = indexed1.length;
-  var result = new Array(len1 + indexed2.length);
-  for (var ii = 0; ii < len1; ii++) {
-    result[ii] = indexed1[ii];
-  }
-  for (; ii < result.length; ii++) {
-    result[ii] = indexed2[ii - len1];
-  }
-  return result;
-}
-
 
 function is(v1, v2) {
   return (
@@ -170,13 +173,6 @@ function is(v1, v2) {
     !!v1 && typeof v1.equals === 'function' && v1.equals(v2)
   );
 }
-
-
-var isArray = Array.isArray;
-
-/**
- * Functors / Monads / Monoids
- */
 
 // TODO: if value is just an iterator, use the list comprehension form.
 // TODO: even if fn isn't curried, but it's length is > 1, it might still be
@@ -199,6 +195,8 @@ function lift(fn, functor) {
     fn(functor) // Raw value
   );
 }
+
+var isArray = Array.isArray;
 
 function mapValues(mapper) {
   return function (value) {
@@ -269,6 +267,7 @@ function bind(fn, monad) {
 
 
 
+// Value checking
 
 function isMaybe(maybeMaybe) {
   return maybeMaybe && maybeMaybe.or && maybeMaybe.is && maybeMaybe.get &&
@@ -311,6 +310,8 @@ function assertError(maybeError) {
 }
 
 
+
+// Export
 
 global.arity = arity;
 global.compose = compose;
