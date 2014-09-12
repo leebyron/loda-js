@@ -276,8 +276,7 @@ function bind(fn, monad) {
 // Value checking
 
 function isMaybe(maybeMaybe) {
-  return maybeMaybe && maybeMaybe.or && maybeMaybe.is && maybeMaybe.get &&
-    maybeMaybe.map;
+  return maybeMaybe.or && maybeMaybe.is && maybeMaybe.get && maybeMaybe.map;
 }
 
 function isMaybeError(maybeMaybe) {
@@ -286,16 +285,16 @@ function isMaybeError(maybeMaybe) {
 }
 
 function valueOr(fallbackValue, maybeValue) {
-  return maybeValue == null ? fallbackValue :
+  return maybeValue == null || maybeValue !== maybeValue ? fallbackValue :
     isMaybe(maybeValue) ? maybeValue.or(fallbackValue) : maybeValue;
 }
 
 function isValue(maybeValue) {
-  return isMaybe(maybeValue) ? maybeValue.is() : maybeValue != null;
+  return !(maybeValue == null || maybeValue !== maybeValue || !isMaybe(maybeValue) || maybeValue.is());
 }
 
 function assertValue(maybeValue) {
-  if (maybeValue == null) {
+  if (maybeValue == null || maybeValue !== maybeValue) {
     throw new Error('Forced empty value: ' + maybeValue);
   }
   return isMaybe(maybeValue) ? maybeValue.get() : maybeValue;
