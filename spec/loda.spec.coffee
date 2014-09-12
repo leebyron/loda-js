@@ -3,7 +3,7 @@ require('jasmine-check').install()
 describe 'loda', ->
 
   # clean this up later
-  loda = require('../src/loda-core.js')
+  require('../src/loda-core.js')
   loda = require('../')
   loda.install global
 

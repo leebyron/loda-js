@@ -252,6 +252,7 @@ function unit(applicative, value) {
     applicative.resolve && applicative.reject ? // Promise
       isValue(value) ? applicative.resolve(assertValue(value)) :
         applicative.reject(isError(value) && assertError(value)) :
+    applicative.constructor ? applicative(value) : // Constructor
     value // Raw value
   );
   // TODO: iterable

@@ -41,7 +41,7 @@ function getLibraries(libInfo) {
   return _.mapValM(function (dep) {
     var module = requireMaybe(dep.name);
     if (module.is()) {
-      return pure(Promise, module);
+      return unit(Promise, module);
     } else {
       var npmName = dep.name + '@' + dep.version;
       return chain(function (lols) {
