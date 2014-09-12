@@ -42,9 +42,9 @@ C -> B    (T -> Either<T>) lift aka lift, alternative form
 C -> C    (T -> T) lift aka lift
 
 
-// pure :: A<any> -> V -> A<V>
-// pure :: Promise<any> -> Maybe<V> -> Promise<V>
-// pure :: Promise<any> -> V -> Promise<V>
+// unit :: A<any> -> V -> A<V>
+// unit :: Promise<any> -> Maybe<V> -> Promise<V>
+// unit :: Promise<any> -> V -> Promise<V>
 if (applicative.then) { // is Promise
   return value instanceof Maybe ?
     value.is() ?

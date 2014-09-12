@@ -10,7 +10,7 @@ function compose(fn2, fn1) {
   if (numFns === 0) return fn2;
   var firstFn = arguments[numFns];
   var restFns = new Array(numFns); for (var $_i = 0; $_i < numFns; ++$_i) restFns[$_i] = arguments[$_i];
-  return arity(firstFn.length, function composedFn() {
+  return arity(firstFn.length, function composed(arg) {
     var result = firstFn.apply(this, arguments);
     var ii = numFns;
     while (ii--) {
@@ -152,7 +152,7 @@ function makeCurryFn(arity, fromRight) {
     's',
     'fn',
     'var cfn = function curried( '+curriedArgs.join(', ')+' ) {\n' +
-      'switch (arguments.length) {' +
+      'switch (arguments.length){' +
         'case 0:return cfn;' +
         cases +
       '}' +
@@ -189,13 +189,13 @@ function lift(fn, functor) {
     functor == null ? functor : // Empty raw value
     isCurried(fn) && fn.length > 1 && functor.chain ? // Create an Apply // TODO: should functor.then and isArray be included here?
       bind(function (value) {
-        return pure(functor, curry(partial(uncurry(fn), value), fn.length - 1));
+        return unit(functor, curry(partial(uncurry(fn), value), fn.length - 1));
       }, functor) :
     isArray(functor) ? functor.map(mapValues(fn)) :
     functor.map ? functor.map(fn) : // Functor
-    functor.ap ? ap(pure(functor, fn), functor) : // Apply
+    functor.ap ? ap(unit(functor, fn), functor) : // Apply
     functor.chain && functor.of || functor.then ? // is Monad
-      bind(function (value) { return pure(functor, fn(value)); }, functor) :
+      bind(function (value) { return unit(functor, fn(value)); }, functor) :
     fn(functor) // Raw value
   );
 }
@@ -222,10 +222,10 @@ function ap(appFn, appVal) {
   );
 }
 
-// pure :: A<any> -> V -> A<V>
-// pure :: Promise<any> -> Maybe<V> -> Promise<V>
-// pure :: Promise<any> -> V -> Promise<V>
-function pure(applicative, value) {
+// unit :: A<any> -> V -> A<V>
+// unit :: Promise<any> -> Maybe<V> -> Promise<V>
+// unit :: Promise<any> -> V -> Promise<V>
+function unit(applicative, value) {
   if (applicative == null) {
     return applicative;
   }
@@ -330,7 +330,7 @@ global.isCurried = isCurried;
 global.is = curry(is);
 global.lift = curry(lift);
 global.ap = curry(ap);
-global.pure = curry(pure);
+global.unit = curry(unit);
 global.bind = curry(bind);
 
 global.valueOr = curry(valueOr);

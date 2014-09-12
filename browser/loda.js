@@ -10,7 +10,7 @@ function universalModule(module, undefined) { module = module || {}
 
 /* global arity, compose, composeRight, partial, partialRight,
           curry, curryRight, uncurry, isCurried,
-          lift, ap, pure, bind, is */
+          lift, ap, unit, bind, is */
 
 
 
@@ -164,7 +164,7 @@ function juxtM(/* ... */) {
 
 function applyJuxtM(fns, args, index, monadType) {
   if (index >= fns.length) {
-    return pure(monadType, []);
+    return unit(monadType, []);
   }
   var fn = fns[index];
   var resultMonad = fn.apply(null, args);
@@ -926,9 +926,9 @@ function arrayM(monadList, monadType) {
   var iter = _iterator(monadList);
   var step = iter.next();
   if (step.done !== false) {
-    return monadType ? pure(monadType, []) : [];
+    return monadType ? unit(monadType, []) : [];
   }
-  var list = pure(step.value, []);
+  var list = unit(step.value, []);
   while (true) {
     list = ap(lift(curriedPushIn, list), step.value);
     step = iter.next();
@@ -942,7 +942,7 @@ var curriedPushIn = curry(pushIn);
 
 
 function liftResult(fn, promise) {
-  return bindResult(function (a) { return pure(promise, fn(a)); }, promise);
+  return bindResult(function (a) { return unit(promise, fn(a)); }, promise);
 }
 
 function bindResult(fn, promise) {
@@ -964,7 +964,7 @@ function joinM(joinable) {
     // Promise/A+ joins itself.
     return joinable;
     // return bind(function (result) {
-    //   return result.then ? result : pure(joinable, result);
+    //   return result.then ? result : unit(joinable, result);
     // }, joinable);
   }
   if (joinable.join) {
@@ -995,7 +995,7 @@ function filterM(predicate, iterable, monadType) {
 
 function filterMDeep(predicate, array, index, monadType) {
   if (index >= array.length) {
-    return pure(monadType ? monadType : predicate(), []);
+    return unit(monadType ? monadType : predicate(), []);
   }
   var value = array[index];
   var passMonad = predicate(value);

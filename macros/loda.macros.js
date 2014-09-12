@@ -3,7 +3,7 @@
  * ------
  *
  * Loda provides sweet.js macros to greatly ease developing in loda's
- * opinionated style of pure functions and monadic values.
+ * opinionated style of unit functions and monadic values.
  *
  * Use of these Macros assumes that Loda has been globally installed.
  *
@@ -308,7 +308,7 @@ macro assignment {
  *     // h(x) equivalent to f(g(x))
  *
  */
-operator (><) 14 right { $l, $r } => #{ compose($l, $r) }
+operator (><) 14 left { $l, $r } => #{ compose($l, $r) }
 
 
 

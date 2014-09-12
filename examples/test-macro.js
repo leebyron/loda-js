@@ -208,11 +208,15 @@ if (var aval = a) {
 }
 
 // It works with other monadic values like Promise
+
+var toUpperCase = decontextify(String.prototype.toUpperCase);
+
 var a = new Promise(function(resolve) { setTimeout(resolve, 1000, 'abc') });
-var b = a?.toUpperCase();
+var b = a >=> toUpperCase;
 console.log(b); // Promise
 b.then(function (value) { console.log(value) }) // "ABC" (after a second)
  .catch(function (error) { console.log('Error:', error) });
+
 
 // and even Array!
 var a = [ 'a', 'b', 'c' ];
@@ -269,6 +273,12 @@ console.log(
   add <$> Maybe('johntra') <*> Maybe('volta')
 );
 
+// Compose a chain
+console.log(
+  32,
+  (mul(2) >< add(3) >< div(10) >< neg)(-130)
+)
+
 
 // Let's talk about bind.
 
@@ -286,6 +296,7 @@ console.log(
   14,
   (bb(10) >< aa)(e)
 );
+
 
 1 >=> aa >=> bb(10) >=> (response) => {
   console.log("JSON Response!", response);
@@ -378,8 +389,25 @@ var data = {
   }
 };
 
-var birthdays = data?.friends?.nodes?.birthday?.year;
+var birthdays = data?.friends?.nodes?['birthday']?.year;
 console.log('birthdays', birthdays);
 
 var birthdays = data?.friends?.nodes[0]?.birthday?.year;
 console.log('birthdays', birthdays);
+
+
+var x = null;
+
+console.log(x?);
+
+console.log(x? ? 'I have it' : 'no can has');
+
+
+if (var sx = x) {
+  console.log(sx);
+} else {
+  console.log('shit');
+}
+
+
+

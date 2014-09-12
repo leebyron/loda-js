@@ -1170,14 +1170,14 @@ describe 'loda', ->
 
         it 'returns a new Maybe with the value', ->
           a = Maybe.None
-          b = pure(a, 3)
+          b = unit(a, 3)
           expect(Maybe.get b).toBe 3
 
         it 'has identity', ->
           a = Maybe
           v = Maybe 123
           expect(eq(
-            ap(pure(a, id), v),
+            ap(unit(a, id), v),
             v
           )).toBe true
 
@@ -1186,8 +1186,8 @@ describe 'loda', ->
           f = add 2
           x = 1
           expect(eq(
-            ap(pure(a, f), pure(a, x)),
-            pure(a, f x)
+            ap(unit(a, f), unit(a, x)),
+            unit(a, f x)
           )).toBe true
 
         it 'has interchange', ->
@@ -1195,8 +1195,8 @@ describe 'loda', ->
           u = Maybe mul 2
           x = 1
           expect(eq(
-            ap(u, pure(a, x)),
-            ap(pure(a, (f) -> f x), u)
+            ap(u, unit(a, x)),
+            ap(unit(a, (f) -> f x), u)
           )).toBe true
 
       describe 'chain / bind', ->
@@ -1258,14 +1258,14 @@ describe 'loda', ->
           f = (x) -> Maybe x + 1
           a = 3
           expect(eq(
-            bind(f, pure(m, a)),
+            bind(f, unit(m, a)),
             f(a)
           )).toBe true
 
         it 'has right identity', ->
           m = Maybe 3
           expect(eq(
-            bind(pure(m), m),
+            bind(unit(m), m),
             m
           )).toBe true
 
