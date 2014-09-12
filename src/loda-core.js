@@ -102,13 +102,13 @@ function makeArityFn(length) {
 function curry(fn, arity) {
   arity = arity || fn.length;
   return arity === 0 ? fn :
-    getCurryFn(arity)(getCurryFn, CURRY_SYMBOL, uncurry(fn));
+    getCurryFn(arity)(getCurryFn, markCurried, uncurry(fn));
 }
 
 function curryRight(fn, arity) {
   arity = arity || fn.length;
   return arity === 0 ? fn :
-    getCurryRightFn(arity)(getCurryRightFn, CURRY_SYMBOL, uncurry(fn));
+    getCurryRightFn(arity)(getCurryRightFn, markCurried, uncurry(fn));
 }
 
 function isCurried(fn) {
@@ -133,12 +133,18 @@ function getCurryRightFn(arity) {
   return CURRY_RIGHT_CACHE[arity] || (CURRY_RIGHT_CACHE[arity] = makeCurryFn(arity, true));
 }
 
+function markCurried(curried, original) {
+  Object.defineProperty ?
+    Object.defineProperty(curried, CURRY_SYMBOL, { value: original }) :
+    (curried[CURRY_SYMBOL] = original);
+}
+
 function makeCurryFn(arity, fromRight) {
   var cases = '';
   var curriedArgs = ['a0'];
   for (var ii = 1; ii < arity; ii++) {
     cases +=
-      'case ' + ii + ':return c(' + (arity - ii) + ')(c,s,function(){' +
+      'case ' + ii + ':return c(' + (arity - ii) + ')(c,m,function(){' +
         'var a=['+curriedArgs.join(',')+'];' +
       (fromRight ?
         'for (var i = arguments.length - 1; i >= 0; i--) a.unshift(arguments[i]);' :
@@ -149,7 +155,7 @@ function makeCurryFn(arity, fromRight) {
   }
   return new Function( /* jshint ignore: line */
     'c',
-    's',
+    'm',
     'fn',
     'var cfn = function curried( '+curriedArgs.join(', ')+' ) {\n' +
       'switch (arguments.length){' +
@@ -158,7 +164,7 @@ function makeCurryFn(arity, fromRight) {
       '}' +
       'return fn.apply(this, arguments);' +
     '};' +
-    'cfn[s] = fn;' +
+    'm(cfn,fn);' +
     'return cfn;'
   );
 }
