@@ -192,8 +192,8 @@ macro (?) {
   // a?[b] => lift(get(b), a)
   // a?.b(x) => lift(function(v){return v.b(x);}, a)
   // a?[b](x) => lift(function(v){return v[b](x);}, a)
-  rule infix { $monad:expr | $access:access_chain } => {
-    lift(function (v) { return v $access; }, $monad)
+  rule infix { $monad:expr | $access:access $chain:access ... } => {
+    lift(function (v) { return v $access $chain ...; }, $monad)
   }
 
 
@@ -238,10 +238,6 @@ macro (?) {
   rule infix { $maybe:expr | } => {
     isValue($maybe)
   }
-}
-
-macro access_chain {
-  rule { $access:access $rest:access ... }
 }
 
 macro access {
