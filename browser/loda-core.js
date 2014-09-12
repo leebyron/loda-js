@@ -252,7 +252,7 @@ function unit(applicative, value) {
     applicative.resolve && applicative.reject ? // Promise
       isValue(value) ? applicative.resolve(assertValue(value)) :
         applicative.reject(isError(value) && assertError(value)) :
-    // applicative.constructor ? new applicative.constructor(value) : // Constructor
+    applicative.constructor ? new applicative.constructor(value) : // Constructor
     value // Raw value
   );
   // TODO: iterable
@@ -296,7 +296,7 @@ function isRawEmpty(maybeValue) {
 }
 
 function isValue(maybeValue) {
-  return !(isRawEmpty(maybeValue) || !isMaybe(maybeValue) || maybeValue.is());
+  return !(isRawEmpty(maybeValue) || isMaybe(maybeValue) && !maybeValue.is());
 }
 
 function assertValue(maybeValue) {

@@ -294,7 +294,7 @@ function isRawEmpty(maybeValue) {
 }
 
 function isValue(maybeValue) {
-  return !(isRawEmpty(maybeValue) || !isMaybe(maybeValue) || maybeValue.is());
+  return !(isRawEmpty(maybeValue) || isMaybe(maybeValue) && !maybeValue.is());
 }
 
 function assertValue(maybeValue) {
