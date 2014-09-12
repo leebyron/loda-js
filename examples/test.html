@@ -63,11 +63,11 @@ p = promise(function (resolve) { setTimeout(resolve, 300, 'hi') })
 q = promise(function (resolve) { setTimeout(resolve, 300, null) })
 
 // r = (+) <$> p <*> q
-// r = ap(lift(add, p), q);
+// r = ap(lift(p, add), q);
 
 qa = liftResult(Maybe.or('default'), q);
 
-r = ap(lift(add, p), qa);
+r = ap(lift(p, add), qa);
 r.then(function(){console.log('yes', arguments);}, function(e){console.log('no', e, e.stack);})
 
 
@@ -93,16 +93,16 @@ x2 = promise(function (resolve) {
 x2.then(function(){console.log('x2yes', arguments);}, function(e){console.log('x2no', e, e.stack);})
 
 // r = chain(
+//   lift(
+//     q,
+//     lift(add)
+//   ),
 //   function(maybeAddFn) {
 //     return lift(
-//       ap(maybeAddFn),
-//       p
+//       p,
+//       ap(maybeAddFn)
 //     )
-//   },
-//   lift(
-//     lift(add),
-//     q
-//   )
+//   }
 // )
 
 
@@ -120,7 +120,7 @@ filterM(pred, [1,2,3,4,5]).then(function(v) { console.log('yay!', v); }, functio
 
 
 // Test w Maybe
-predMaybe = function(a) { return lift(gt(3), Maybe(parseInt(a))) }
+predMaybe = function(a) { return lift(Maybe(parseInt(a)), gt(3)) }
 console.log(
   Maybe.or('shit', filterM(predMaybe, ['1','2','3','4','5']))
 );

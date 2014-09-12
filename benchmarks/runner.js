@@ -9,12 +9,12 @@ var exec = Promise.denodeify(child.exec);
 
 function runBenchmarks(config) {
   return chain(
+    getLibraries(config.libraries),
     compose(
       _.doall(console.log),
       _.mapCat(_.map(testResult)), // TODO: make chain work for lazy iterables
       mapTestSuites(config.tests)
-    ),
-    getLibraries(config.libraries)
+    )
   )
 }
 
@@ -44,9 +44,9 @@ function getLibraries(libInfo) {
       return unit(Promise, module);
     } else {
       var npmName = dep.name + '@' + dep.version;
-      return chain(function (lols) {
+      return chain(exec('npm install ' + npmName), function (lols) {
         return requireMaybe(dep.name);
-      }, exec('npm install ' + npmName));
+      });
     }
   }, normalizeLibInfo(libInfo));
 }

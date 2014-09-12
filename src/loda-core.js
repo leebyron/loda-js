@@ -194,19 +194,19 @@ function is(v1, v2) {
 //       the right thing to return an Apply
 // TODO: accept multiple args are do the apply chaining for us
 
-// lift :: (a -> b) -> M a -> M b
-function lift(fn, functor) {
+// lift :: M a -> (a -> b) -> M b
+function lift(functor, fn) {
   return (
     isRawEmpty(functor) ? functor : // Empty raw value
     isCurried(fn) && fn.length > 1 && functor.chain ? // Create an Apply // TODO: should functor.then and isArray be included here?
-      chain(function (value) {
+      chain(functor, function (value) {
         return unit(functor, curry(partial(uncurry(fn), value), fn.length - 1));
-      }, functor) :
+      }) :
     isArray(functor) ? functor.map(mapValues(fn)) :
     functor.map ? functor.map(fn) : // Functor
     functor.ap ? ap(unit(functor, fn), functor) : // Apply
     functor.chain && functor.of || functor.then ? // is Monad
-      chain(function (value) { return unit(functor, fn(value)); }, functor) :
+      chain(functor, function (value) { return unit(functor, fn(value)); }) :
     fn(functor) // Raw value
   );
 }
@@ -228,7 +228,7 @@ function ap(appFn, appVal) {
     isRawEmpty(appFn) ? appFn : isRawEmpty(appVal) ? appVal : // Empty raw value
     appFn.ap ? appFn.ap(appVal) : // Apply
     appFn.chain || appFn.then || isArray(appFn) ? // Monad (TODO: match iterables)
-      chain(function (fn) { return lift(fn, appVal); }, appFn) :
+      chain(appFn, function (fn) { return lift(appVal, fn); }) :
     appFn(appVal) // Raw value
   );
 }
@@ -257,7 +257,7 @@ function unit(applicative, value) {
 }
 
 // TODO: accept multiple args and do the apply chaining for us
-function chain(fn, monad) {
+function chain(monad, fn) {
   return (
     isRawEmpty(monad) ? monad : // Empty raw value
     monad.chain ? monad.chain(fn) : // Monad
@@ -333,10 +333,10 @@ global.uncurry = uncurry;
 global.isCurried = isCurried;
 
 global.is = curry(is);
-global.lift = curry(lift);
+global.lift = curryRight(lift);
 global.ap = curry(ap);
 global.unit = curry(unit);
-global.chain = curry(chain);
+global.chain = curryRight(chain);
 
 global.valueOr = curry(valueOr);
 global.isValue = isValue;

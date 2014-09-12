@@ -168,11 +168,11 @@ function applyJuxtM(fns, args, index, monadType) {
   }
   var fn = fns[index];
   var resultMonad = fn.apply(null, args);
-  return chain(function (result) {
-    return lift(function (list) {
+  return chain(resultMonad, function (result) {
+    return lift(applyJuxtM(fns, args, index + 1, resultMonad), function (list) {
       return list.length ? [result].concat(list) : [result];
-    }, applyJuxtM(fns, args, index + 1, resultMonad));
-  }, resultMonad);
+    });
+  });
 }
 
 
@@ -930,7 +930,7 @@ function arrayM(monadList, monadType) {
   }
   var list = unit(step.value, []);
   while (true) {
-    list = ap(lift(curriedPushIn, list), step.value);
+    list = ap(lift(list, curriedPushIn), step.value);
     step = iter.next();
     if (step.done !== false) return list;
   }
@@ -963,9 +963,9 @@ function joinM(joinable) {
   if (joinable.then) {
     // Promise/A+ joins itself.
     return joinable;
-    // return chain(function (result) {
+    // return chain(joinable, function (result) {
     //   return result.then ? result : unit(joinable, result);
-    // }, joinable);
+    // });
   }
   if (joinable.join) {
     return joinable.join();
@@ -999,13 +999,13 @@ function filterMDeep(predicate, array, index, monadType) {
   }
   var value = array[index];
   var passMonad = predicate(value);
-  return chain(function (pass) {
-    return lift(function (list) {
+  return chain(passMonad, function (pass) {
+    return lift(filterMDeep(predicate, array, index + 1, passMonad), function (list) {
       return list.length ?
         pass ? [value].concat(list) : list :
         pass ? [value] : [];
-    }, filterMDeep(predicate, array, index + 1, passMonad));
-  }, passMonad);
+    });
+  });
 }
 
 
@@ -1016,7 +1016,7 @@ function mapValM(fn, iterable) {
   return arrayM(map(function (kv) {
     var k = kv[0];
     var v = kv[1];
-    return lift(partial(tuple, k), fn(v));
+    return lift(fn(v), partial(tuple, k));
   }, iterable));
 }
 
@@ -1035,16 +1035,16 @@ function mapValM(fn, iterable) {
 //   var step = iter.next();
 //   if (step.done !== false) return result;
 //   result = predicate(step.value);
-//   result = lift(function (passed) {
+//   result = lift(result, function (passed) {
 //     return passed ? [step.value] : [];
-//   }, result);
+//   });
 
 //   while (true) {
 //     step = iter.next();
 //     if (step.done !== false) return result;
-//     result = lift(function (passed) {
+//     result = lift(predicate(step.value), function (passed) {
 //       return
-//     }, predicate(step.value));
+//     });
 //   }
 // }
 
@@ -1064,7 +1064,7 @@ function reduceM(reducer, initial, iterable) {
   while (true) {
     step = iter.next();
     if (step.done !== false) return reduced;
-    reduced = chain(partialRight(reducer, step.value), reduced);
+    reduced = chain(reduced, partialRight(reducer, step.value));
   }
 }
 

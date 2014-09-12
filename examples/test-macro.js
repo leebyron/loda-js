@@ -63,7 +63,7 @@ console.log(c!.toUpperCase()) // logs "ABC"
 // But forcing could throw! Let's do this in a safe way:
 
 console.log(
-  chain(get('c'), chain(get('b'), a)).or('bust')
+  chain(chain(a, get('b')), get('c')).or('bust')
 );
 
 // Yikes. With better syntax this time:

@@ -97,11 +97,6 @@ operator (?:) 6 left { $maybe, $otherwise } => #{
 }
 
 
-// macro (<?)
-//   rule infix { $fn:expr | $maybe:expr } => {
-//     lift($fn, $maybe)
-//   }
-// }
 
 /**
  * Lifting Maybe
@@ -121,11 +116,13 @@ operator (?:) 6 left { $maybe, $otherwise } => #{
  *
  */
 operator (?>) 7 left { $maybe, $fn } => #{
-  lift($fn, $maybe)
+  lift($maybe, $fn)
 }
 operator (<?) 7 right { $fn, $maybe } => #{
-  lift($fn, $maybe)
+  lift($maybe, $fn)
 }
+
+
 
 /**
  * Applying Maybe
@@ -148,18 +145,6 @@ operator (?<?) 6 left { $appfn, $appval } => #{
   ap($appfn, $appval)
 }
 
-// operator (<$>) 7 left { $l, $r } => #{ lift($l, $r) }
-// operator (<*>) 7 left { $l, $r } => #{ ap($l, $r) }
-
-// Note: not sure about this yet - see macro on fn?(arg) below
-// macro (??) {
-//   rule infix { $appFn | ( $appArgs:expr ... ) } => {
-//     ap($fn, $appArgs ...)
-//   }
-// }
-
-// operator (<*>) 7 left { $l, $r } => #{ ap($l, $r) }
-
 
 
 // Property Access and Method Call chaining of Monadic values.
@@ -176,23 +161,6 @@ macro (?) {
   rule infix { $cond:expr | $then:expr : $otherwise:expr } => {
     $cond $[?] $then : $otherwise
   }
-
-  // Sweet JS only lets you look-back a single token, and this one is in a
-  // nested tree. Maybe SweetJS can't represent this.
-  // rule infix { $fn ( | $arg ) } => {
-  //   'how about'
-  // }
-
-  // Note: This seems at odds with the rule below which assumes the left
-  // expression is possibly empty, rather than the arguments.
-  // Below, this has the effect of applying a monadic function to a non-monadic
-  // value. We need a different syntax to illustrate that the argument may itself
-  // not exist. Then ideally these combine well to illustrate "ap" where both
-  // the function and arguments are monadic/optional.
-  // rule infix { $fn:expr | ( $monad:expr ... ) } => {
-  //   lift($fn, $monad ...)
-  // }
-
 
 
 
@@ -267,12 +235,13 @@ macro (?) {
    *     console.log(y); // null
    *
    */
-  // a?.b => lift(get('b'), a)
-  // a?[b] => lift(get(b), a)
-  // a?.b(x) => lift(function(v){return v.b(x);}, a)
-  // a?[b](x) => lift(function(v){return v[b](x);}, a)
-  rule infix { $monad:expr | $access:access $chain:access ... } => {
-    lift(function (v) { return v $access $chain ...; }, $monad)
+  // a?(x) => lift(a, function(v){return v(x);})
+  // a?.b => lift(a, function(v){return v.b;})
+  // a?[b] => lift(a, function(v){return v[b];})
+  // a?.b(x) => lift(a, function(v){return v.b(x);})
+  // a?[b](x) => lift(a, function(v){return v[b](x);})
+  rule infix { $monad:expr | $access:access $rest:access ... } => {
+    lift($monad, function (v) { return v $access $rest ...; })
   }
 
 
@@ -479,8 +448,8 @@ macro (@) {
  * common operator, however colliding with it is probably a bad idea.
  * It's a bummer as it would be nice to match Haskell muscle memory.
  */
-operator (==>) 6 left { $l, $r } => #{ chain($r, $l) }
-operator (<==) 6 right { $l, $r } => #{ chain($l, $r) }
+operator (==>) 6 left { $l, $r } => #{ chain($l, $r) }
+operator (<==) 6 right { $l, $r } => #{ chain($r, $l) }
 
 
 

@@ -810,7 +810,7 @@ describe 'loda', ->
         expect(pipe123 add).toBe 6
         expect(pipe123 sub).toBe -4
 
-      it 'can make something that looks like chain', ->
+      it 'can make something that looks like underscore chain', ->
         counter = iterable -> i = 0; -> { value: i++, done: false }
         isEven = complement mod 2
         result = pipe(counter)(
@@ -821,7 +821,7 @@ describe 'loda', ->
         )
         expect(result).toEqual [ 3, 5, 7 ]
 
-      it 'like chain, but not limited to iterable things', ->
+      it 'like underscore chain, but not limited to iterable things', ->
         pipe123 = pipe 1, 2, 3
         expect(pipe123 add, mul(2), add(1)).toBe 13
 
@@ -1102,7 +1102,7 @@ describe 'loda', ->
           inc = add 1
           m1 = Maybe.Value 3
           expect(inc m1).not.toEqual 4
-          m2 = lift inc, m1
+          m2 = lift m1, inc
           expect(Maybe.get m2).toBe 4
 
         it 'safely carries Maybe.None through calls', ->
@@ -1110,13 +1110,13 @@ describe 'loda', ->
           spy = jasmine.createSpy()
           m1 = Maybe.None
           m2 = inc m1
-          m3 = lift spy, m2
+          m3 = lift m2, spy
           expect(spy).not.toHaveBeenCalled()
           expect(Maybe.is m3).toBe false
 
         it 'has identity', ->
           a = Maybe 1
-          b = lift id, a
+          b = lift a, id
           expect(eq a, b).toBe true
 
         it 'has composition', ->
@@ -1124,8 +1124,8 @@ describe 'loda', ->
           f = add 1
           g = mul 2
           expect(eq(
-            lift(((x) -> f(g(x))), a),
-            lift(f, lift(g, a))
+            lift(a, (x) -> f(g(x))),
+            lift(lift(a, g), f)
           )).toBe true
 
       describe 'apply', ->
@@ -1147,12 +1147,12 @@ describe 'loda', ->
           a = Maybe 1
           b = Maybe 3
           c = Maybe null
-          addAMaybe = lift add, a
+          addAMaybe = lift a, add
           sumAB = ap addAMaybe, b
           expect(Maybe.or 'nuthin', sumAB).toBe 4
           sumAC = ap addAMaybe, c
           expect(Maybe.or 'nuthin', sumAC).toBe 'nuthin'
-          addCMaybe = lift add, c
+          addCMaybe = lift c, add
           sumCB = ap addCMaybe, b
           expect(addCMaybe).toBe Maybe.None
           expect(Maybe.or 'nuthin', sumCB).toBe 'nuthin'
@@ -1162,7 +1162,7 @@ describe 'loda', ->
           t = Maybe mul 3
           v = Maybe 10
           expect(eq(
-            ap(ap(lift(((f) -> (g) -> (x) -> f(g(x))), s), t), v),
+            ap(ap(lift(s, (f) -> (g) -> (x) -> f(g(x))), t), v),
             ap(s, ap(t, v))
           )).toBe true
 
@@ -1199,29 +1199,34 @@ describe 'loda', ->
             ap(unit(a, (f) -> f x), u)
           )).toBe true
 
-      describe 'chain / chain', ->
+      describe 'chain', ->
 
         it 'can call a function which returns another maybe', ->
           toInt = (x) ->
             n = parseInt x
             unless isNaN(n) then Maybe n else Maybe.None
-          expect(Maybe.or 'nothin', chain toInt, Maybe '123').toBe 123
-          expect(Maybe.or 'nothin', chain toInt, Maybe 'abc').toBe 'nothin'
-          expect(Maybe.or 'nothin', chain toInt, Maybe.None).toBe 'nothin'
+          expect(Maybe.or 'nothin', chain(Maybe('123'), toInt)).toBe 123
+          expect(Maybe.or 'nothin', chain(Maybe('abc'), toInt)).toBe 'nothin'
+          expect(Maybe.or 'nothin', chain(Maybe.None, toInt)).toBe 'nothin'
 
         it 'can chain chains', ->
           doubleOrDie = (x) -> Maybe( x * 2 if x < 8 )
           expect(Maybe.or 'die',
-            chain(doubleOrDie, Maybe 1)
+            chain(Maybe(1), doubleOrDie)
           ).toBe 2
           expect(Maybe.or 'die',
-            chain(doubleOrDie, chain(doubleOrDie, chain(doubleOrDie, Maybe 1)))
+            chain(chain(chain(Maybe(1), doubleOrDie), doubleOrDie), doubleOrDie)
           ).toBe 8
           expect(Maybe.or 'die',
-            chain(doubleOrDie,
-              chain(doubleOrDie,
-                chain(doubleOrDie,
-                  chain(doubleOrDie, Maybe 1))))
+            chain(
+              chain(
+                chain(
+                  chain(
+                    Maybe(1),
+                    doubleOrDie),
+                  doubleOrDie),
+                doubleOrDie),
+              doubleOrDie)
           ).toBe 'die'
 
         it 'can chain chains using pipe', ->
@@ -1251,8 +1256,8 @@ describe 'loda', ->
           g = (x) -> Maybe( x - 10 if x > 10 )
           m = Maybe 3
           expect(eq(
-            chain(g, chain(f, m)),
-            chain(((x) -> chain(g, f(x))), m)
+            chain(chain(m, f), g),
+            chain(m, (x) -> chain(f(x), g))
           )).toBe true
 
       describe 'monad', ->
@@ -1262,14 +1267,14 @@ describe 'loda', ->
           f = (x) -> Maybe x + 1
           a = 3
           expect(eq(
-            chain(f, unit(m, a)),
+            chain(unit(m, a), f),
             f(a)
           )).toBe true
 
         it 'has right identity', ->
           m = Maybe 3
           expect(eq(
-            chain(unit(m), m),
+            chain(m, unit(m)),
             m
           )).toBe true
 
@@ -1278,7 +1283,7 @@ describe 'loda', ->
 
 # p = new Promise(function (uh, oh) {oh('crap')})
 # Promise {[[PromiseStatus]]: "rejected", [[PromiseValue]]: "crap"}
-# lift(lift(function (x) { return x + x; }), p).then(function (x) {
+# lift(p, lift(function (x) { return x + x; })).then(function (x) {
 #  console.log('got', x); }).catch(function (e) { console.log('error', e); })
 # VM1771:2 error crap
 # Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
@@ -1286,8 +1291,8 @@ describe 'loda', ->
 
 # q = new Promise(function (uh, oh) {uh('hi')})
 # Promise {[[PromiseStatus]]: "resolved", [[PromiseValue]]: "hi"}
-# r = lift(function (maybeFn) {
-#  return ap(Maybe(3), maybeFn);}, lift(lift(add), q))
+# r = lift(lift(q, lift(add)), function (maybeFn) {
+#  return ap(Maybe(3), maybeFn);})
 # Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
 # r.then(function(){console.log('yes', arguments);},
 #   function(e){console.log('no', e, e.stack);})
