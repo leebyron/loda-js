@@ -8,7 +8,7 @@
 
 /* global arity, compose, composeRight, partial, partialRight,
           curry, curryRight, uncurry, isCurried,
-          lift, ap, unit, bind, is */
+          lift, ap, unit, chain, is */
 
 
 
@@ -61,7 +61,7 @@ function apply(fn, argList, thisArg) {
 
 
 /**
- * Unbinding
+ * Unchaining
  */
 
 /**
@@ -166,7 +166,7 @@ function applyJuxtM(fns, args, index, monadType) {
   }
   var fn = fns[index];
   var resultMonad = fn.apply(null, args);
-  return bind(function (result) {
+  return chain(function (result) {
     return lift(function (list) {
       return list.length ? [result].concat(list) : [result];
     }, applyJuxtM(fns, args, index + 1, resultMonad));
@@ -940,10 +940,10 @@ var curriedPushIn = curry(pushIn);
 
 
 function liftResult(fn, promise) {
-  return bindResult(function (a) { return unit(promise, fn(a)); }, promise);
+  return chainResult(function (a) { return unit(promise, fn(a)); }, promise);
 }
 
-function bindResult(fn, promise) {
+function chainResult(fn, promise) {
   if (promise.then) { // is Promise
     return promise.then(
       function (success) { return fn(Maybe.Value(success)); },
@@ -961,7 +961,7 @@ function joinM(joinable) {
   if (joinable.then) {
     // Promise/A+ joins itself.
     return joinable;
-    // return bind(function (result) {
+    // return chain(function (result) {
     //   return result.then ? result : unit(joinable, result);
     // }, joinable);
   }
@@ -981,7 +981,7 @@ function joinM(joinable) {
 // to handle the empty-list, otherwise we will call predicate() with no args.
 
 // TODO: this implementation results in each dequeue of the iterator happening
-// once the previous bind has executed. For promises, this results in a serial
+// once the previous chain has executed. For promises, this results in a serial
 // execution order. This behavior may want to be preserved, but it should
 // probably not be the default. See mapM and arrayM as examples of where
 // optimistic dequeuing of the iteration results in parallel execution of
@@ -997,7 +997,7 @@ function filterMDeep(predicate, array, index, monadType) {
   }
   var value = array[index];
   var passMonad = predicate(value);
-  return bind(function (pass) {
+  return chain(function (pass) {
     return lift(function (list) {
       return list.length ?
         pass ? [value].concat(list) : list :
@@ -1062,14 +1062,14 @@ function reduceM(reducer, initial, iterable) {
   while (true) {
     step = iter.next();
     if (step.done !== false) return reduced;
-    reduced = bind(partialRight(reducer, step.value), reduced);
+    reduced = chain(partialRight(reducer, step.value), reduced);
   }
 }
 
 
 
 function promise(fn) {
-  // Hey, this looks a lot like bind...
+  // Hey, this looks a lot like chain...
   return new Promise(function (succeed, fail) {
     fn(function (value) {
       value instanceof Maybe || (value = Maybe(value));
@@ -1365,7 +1365,7 @@ module.exports = loda = {
 
   'promise': curry(promise),
   'liftResult': curry(liftResult),
-  'bindResult': curry(bindResult),
+  'chainResult': curry(chainResult),
 
   'Maybe': Maybe,
 }

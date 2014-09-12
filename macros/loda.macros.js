@@ -287,7 +287,7 @@ macro assignment {
 
 
 /**
- * Composition, calling and binding
+ * Composition, calling and chaining
  * --------------------------------
  */
 
@@ -423,7 +423,7 @@ operator (<*>) 7 left { $l, $r } => #{ ap($l, $r) }
 
 
 /**
- * Monadic bind
+ * Monadic chain
  * ============
  *
  * Binds the right function to the left monadic value.
@@ -442,8 +442,8 @@ operator (<*>) 7 left { $l, $r } => #{ ap($l, $r) }
  * It's a bummer as it would be nice to match Haskell muscle memory.
  * ">=>" is unclaimed and unambigous with JavaScript's function shorthand, "=>".
  */
-operator (>=>) 6 left { $l, $r } => #{ bind($r, $l) }
-operator (<=<) 6 right { $l, $r } => #{ bind($l, $r) }
+operator (>=>) 6 left { $l, $r } => #{ chain($r, $l) }
+operator (<=<) 6 right { $l, $r } => #{ chain($l, $r) }
 
 
 

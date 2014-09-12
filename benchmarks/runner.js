@@ -8,10 +8,10 @@ var _ = require('../');
 var exec = Promise.denodeify(child.exec);
 
 function runBenchmarks(config) {
-  return bind(
+  return chain(
     compose(
       _.doall(console.log),
-      _.mapCat(_.map(testResult)), // TODO: make bind work for lazy iterables
+      _.mapCat(_.map(testResult)), // TODO: make chain work for lazy iterables
       mapTestSuites(config.tests)
     ),
     getLibraries(config.libraries)
@@ -44,7 +44,7 @@ function getLibraries(libInfo) {
       return pure(Promise, module);
     } else {
       var npmName = dep.name + '@' + dep.version;
-      return bind(function (lols) {
+      return chain(function (lols) {
         return requireMaybe(dep.name);
       }, exec('npm install ' + npmName));
     }

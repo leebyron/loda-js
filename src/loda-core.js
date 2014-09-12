@@ -199,14 +199,14 @@ function lift(fn, functor) {
   return (
     isRawEmpty(functor) ? functor : // Empty raw value
     isCurried(fn) && fn.length > 1 && functor.chain ? // Create an Apply // TODO: should functor.then and isArray be included here?
-      bind(function (value) {
+      chain(function (value) {
         return unit(functor, curry(partial(uncurry(fn), value), fn.length - 1));
       }, functor) :
     isArray(functor) ? functor.map(mapValues(fn)) :
     functor.map ? functor.map(fn) : // Functor
     functor.ap ? ap(unit(functor, fn), functor) : // Apply
     functor.chain && functor.of || functor.then ? // is Monad
-      bind(function (value) { return unit(functor, fn(value)); }, functor) :
+      chain(function (value) { return unit(functor, fn(value)); }, functor) :
     fn(functor) // Raw value
   );
 }
@@ -228,7 +228,7 @@ function ap(appFn, appVal) {
     isRawEmpty(appFn) ? appFn : isRawEmpty(appVal) ? appVal : // Empty raw value
     appFn.ap ? appFn.ap(appVal) : // Apply
     appFn.chain || appFn.then || isArray(appFn) ? // Monad (TODO: match iterables)
-      bind(function (fn) { return lift(fn, appVal); }, appFn) :
+      chain(function (fn) { return lift(fn, appVal); }, appFn) :
     appFn(appVal) // Raw value
   );
 }
@@ -256,7 +256,7 @@ function unit(applicative, value) {
 }
 
 // TODO: accept multiple args and do the apply chaining for us
-function bind(fn, monad) {
+function chain(fn, monad) {
   return (
     isRawEmpty(monad) ? monad : // Empty raw value
     monad.chain ? monad.chain(fn) : // Monad
@@ -335,7 +335,7 @@ global.is = curry(is);
 global.lift = curry(lift);
 global.ap = curry(ap);
 global.unit = curry(unit);
-global.bind = curry(bind);
+global.chain = curry(chain);
 
 global.valueOr = curry(valueOr);
 global.isValue = isValue;

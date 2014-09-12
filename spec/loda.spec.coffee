@@ -1199,46 +1199,50 @@ describe 'loda', ->
             ap(unit(a, (f) -> f x), u)
           )).toBe true
 
-      describe 'chain / bind', ->
+      describe 'chain / chain', ->
 
         it 'can call a function which returns another maybe', ->
           toInt = (x) ->
             n = parseInt x
             unless isNaN(n) then Maybe n else Maybe.None
-          expect(Maybe.or 'nothin', bind toInt, Maybe '123').toBe 123
-          expect(Maybe.or 'nothin', bind toInt, Maybe 'abc').toBe 'nothin'
-          expect(Maybe.or 'nothin', bind toInt, Maybe.None).toBe 'nothin'
+          expect(Maybe.or 'nothin', chain toInt, Maybe '123').toBe 123
+          expect(Maybe.or 'nothin', chain toInt, Maybe 'abc').toBe 'nothin'
+          expect(Maybe.or 'nothin', chain toInt, Maybe.None).toBe 'nothin'
 
-        it 'can chain binds', ->
+        it 'can chain chains', ->
           doubleOrDie = (x) -> Maybe( x * 2 if x < 8 )
           expect(Maybe.or 'die',
-            bind(doubleOrDie, Maybe 1)
+            chain(doubleOrDie, Maybe 1)
           ).toBe 2
           expect(Maybe.or 'die',
-            bind(doubleOrDie, bind(doubleOrDie, bind(doubleOrDie, Maybe 1)))
+            chain(doubleOrDie, chain(doubleOrDie, chain(doubleOrDie, Maybe 1)))
           ).toBe 8
           expect(Maybe.or 'die',
-            bind(doubleOrDie,
-              bind(doubleOrDie,
-                bind(doubleOrDie,
-                  bind(doubleOrDie, Maybe 1))))
+            chain(doubleOrDie,
+              chain(doubleOrDie,
+                chain(doubleOrDie,
+                  chain(doubleOrDie, Maybe 1))))
           ).toBe 'die'
 
-        it 'can chain binds using pipe', ->
+        it 'can chain chains using pipe', ->
           doubleOrDie = (x) -> Maybe( x * 2 if x < 8 )
           pipeMaybe1 = pipe Maybe 1
           expect(Maybe.or 'die',
-            pipeMaybe1 bind(doubleOrDie)
+            pipeMaybe1 chain(doubleOrDie)
           ).toBe 2
           expect(Maybe.or 'die',
-            pipeMaybe1 bind(doubleOrDie), bind(doubleOrDie), bind(doubleOrDie)
+            pipeMaybe1(
+              chain(doubleOrDie),
+              chain(doubleOrDie),
+              chain(doubleOrDie)
+            )
           ).toBe 8
           expect(Maybe.or 'die',
             pipeMaybe1(
-              bind(doubleOrDie),
-              bind(doubleOrDie),
-              bind(doubleOrDie),
-              bind(doubleOrDie)
+              chain(doubleOrDie),
+              chain(doubleOrDie),
+              chain(doubleOrDie),
+              chain(doubleOrDie)
             )
           ).toBe 'die'
 
@@ -1247,8 +1251,8 @@ describe 'loda', ->
           g = (x) -> Maybe( x - 10 if x > 10 )
           m = Maybe 3
           expect(eq(
-            bind(g, bind(f, m)),
-            bind(((x) -> bind(g, f(x))), m)
+            chain(g, chain(f, m)),
+            chain(((x) -> chain(g, f(x))), m)
           )).toBe true
 
       describe 'monad', ->
@@ -1258,14 +1262,14 @@ describe 'loda', ->
           f = (x) -> Maybe x + 1
           a = 3
           expect(eq(
-            bind(f, unit(m, a)),
+            chain(f, unit(m, a)),
             f(a)
           )).toBe true
 
         it 'has right identity', ->
           m = Maybe 3
           expect(eq(
-            bind(unit(m), m),
+            chain(unit(m), m),
             m
           )).toBe true
 

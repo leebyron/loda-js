@@ -63,7 +63,7 @@ console.log(c!.toUpperCase()) // logs "ABC"
 // But forcing could throw! Let's do this in a safe way:
 
 console.log(
-  bind(get('c'), bind(get('b'), a)).or('bust')
+  chain(get('c'), chain(get('b'), a)).or('bust')
 );
 
 // Yikes. With better syntax this time:
@@ -193,18 +193,18 @@ if (a?) {
   console.log('no value');
 }
 
-// And you can bind to the inner value if you like
+// And you can chain to the inner value if you like
 if (var aval = a) {
   console.log(aval);
 } else {
-  console.log('no value to bind');
+  console.log('no value to chain');
 }
 
 // Doing it again, shouldnt clobber
 if (var aval = a) {
   console.log(aval);
 } else {
-  console.log('no value to bind');
+  console.log('no value to chain');
 }
 
 // It works with other monadic values like Promise
@@ -296,7 +296,7 @@ console.log(
 )
 
 
-// Let's talk about bind.
+// Let's talk about chain.
 
 
 function aa(x) {
