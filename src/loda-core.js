@@ -6,22 +6,27 @@
 // If any function "upstream" is curried and has a length > 1, apply arguments to
 // it first.
 function compose(fn2, fn1) {
-  var numFns = arguments.length - 1;
-  if (numFns === 0) return fn2;
-  var firstFn = arguments[numFns];
-  var restFns = new Array(numFns); for (var $_i = 0; $_i < numFns; ++$_i) restFns[$_i] = arguments[$_i];
+  var fns = new Array(arguments.length); for (var $_i = 0; $_i < arguments.length; ++$_i) fns[arguments.length - $_i - 1] = arguments[$_i];
+  if (fns.length === 1) return fn2;
+  return composeList(fns);
+}
+
+function composeRight(fn1, fn2) {
+  var fns = new Array(arguments.length); for (var $_i = 0; $_i < arguments.length; ++$_i) fns[$_i] = arguments[$_i];
+  if (fns.length === 1) return fn1;
+  return composeList(fns);
+}
+
+function composeList(fns) {
+  var firstFn = fns[0];
   return arity(firstFn.length, function composed(arg) {
     var result = firstFn.apply(this, arguments);
-    var ii = numFns;
-    while (ii--) {
-      result = restFns[ii].call(this, result);
+    var ii = 0;
+    while (++ii < fns.length) {
+      result = fns[ii].call(this, result);
     }
     return result;
   });
-}
-
-function composeRight() {
-  return compose.apply(this, Array.prototype.reverse.call(arguments));
 }
 
 
