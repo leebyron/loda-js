@@ -256,6 +256,16 @@ function whizBang(a, b, c) {
   return (a + b) * c;
 }
 
+console.log(
+  9,
+  whizBang@(1)@(2)@(3)()
+);
+
+console.log(
+  8,
+  whizBang@(1)@@(2)@(3)()
+);
+
 var whiz10And12 = whizBang@(10, 12);
 console.log(
   286,
@@ -435,4 +445,3 @@ console.log(
   // Or, this is safer, have a fallback value
   qrs5?@(10)() ?: 0
 );
-
