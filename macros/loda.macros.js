@@ -241,15 +241,12 @@ macro (?) {
 }
 
 macro access_chain {
-  rule { $access:access_expr ... }
-}
-
-macro access_expr {
-  rule { $access:access ($args:expr ...) }
-  rule { $access:access }
+  rule { $access:access $rest:access ... }
 }
 
 macro access {
+  rule { @( $args:expr ... ) }
+  rule { ( $args:expr ... ) }
   rule { . $name:ident }
   rule { [ $name:expr ] }
 }
@@ -365,15 +362,23 @@ macro (function@) {
  *
  */
 macro (@@) {
-  rule infix { $name:ident | ( $args ... ) } => {
+  rule infix { $name:expr | ( ) } => {
+    $name
+  }
+  rule infix { $name:expr | ( $args ... ) } => {
     partialRight($name, $args ...)
   }
+  rule {}
 }
 
 macro (@) {
-  rule infix { $name:ident | ( $args ... ) } => {
+  rule infix { $name:expr | ( ) } => {
+    $name
+  }
+  rule infix { $name:expr | ( $args ... ) } => {
     partial($name, $args ...)
   }
+  rule {}
 }
 
 

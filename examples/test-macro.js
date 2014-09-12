@@ -409,5 +409,24 @@ if (var sx = x) {
   console.log('shit');
 }
 
+// Combine some operators
 
+var q = Maybe({
+  r: {
+    s: function (x, y) {
+      return x + y;
+    }
+  }
+});
+
+// Maybe a partially applied function
+var qrs5 = q?.r?.s@(5);
+
+console.log(
+  15,
+  // Resolve the Maybe, then partially apply 10, then call, forcefully unwrap the result to get a real number.
+  qrs5?@(10)()!,
+  // Or, this is safer, have a fallback value
+  qrs5?@(10)() ?: 0
+);
 
