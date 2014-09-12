@@ -188,7 +188,7 @@ function is(v1, v2) {
 // lift :: (a -> b) -> M a -> M b
 function lift(fn, functor) {
   return (
-    functor == null ? functor : // Empty raw value
+    isRawEmpty(functor) ? functor : // Empty raw value
     isCurried(fn) && fn.length > 1 && functor.chain ? // Create an Apply // TODO: should functor.then and isArray be included here?
       bind(function (value) {
         return unit(functor, curry(partial(uncurry(fn), value), fn.length - 1));
@@ -206,7 +206,7 @@ var isArray = Array.isArray;
 
 function mapValues(mapper) {
   return function (value) {
-    return value != null && mapper(value);
+    return isRawEmpty(value) ? value : mapper(value);
   }
 }
 
@@ -216,7 +216,7 @@ function mapValues(mapper) {
 // AKA <*>
 function ap(appFn, appVal) {
   return (
-    appFn == null || appVal == null ? null : // Empty raw value
+    isRawEmpty(appFn) ? appFn : isRawEmpty(appVal) ? appVal : // Empty raw value
     appFn.ap ? appFn.ap(appVal) : // Apply
     appFn.chain || appFn.then || isArray(appFn) ? // Monad (TODO: match iterables)
       bind(function (fn) { return lift(fn, appVal); }, appFn) :
@@ -228,38 +228,28 @@ function ap(appFn, appVal) {
 // unit :: Promise<any> -> Maybe<V> -> Promise<V>
 // unit :: Promise<any> -> V -> Promise<V>
 function unit(applicative, value) {
-  if (applicative == null) {
+  if (isRawEmpty(applicative)) {
     return applicative;
   }
   if (applicative.then) {
     applicative = applicative.constructor;
   }
-  if (applicative.resolve && applicative.reject) { // is Promise
-    return isValue(value) ?
-      applicative.resolve(assertValue(value)) :
-      applicative.reject(isError(value) && assertError(value));
-  }
-  if (applicative.of) { // is Applicative
-    return applicative.of(value);
-  }
-  if (applicative.constructor.of) { // is Applicative Constructor
-    return applicative.constructor.of(value);
-  }
-  if (isArray(applicative)) { // is Array
-    return value == null ? [] : [value];
-  }
-  // TODO: handle this...
-  // if (isIterable(applicative)) { // is Iterable
-  //   return [value];
-  // }
-  // Not applicative? This is the "null case", value is returned as is.
-  return value;
+  return (
+    applicative.of ? applicative.of(value) : // Applicative
+    applicative.constructor.of ? applicative.constructor.of(value) : // Applicative Constructor
+    isArray(applicative) ? isValue(value) ? [] : [value] : // Array
+    applicative.resolve && applicative.reject ? // Promise
+      isValue(value) ? applicative.resolve(assertValue(value)) :
+        applicative.reject(isError(value) && assertError(value)) :
+    value // Raw value
+  );
+  // TODO: iterable
 }
 
 // TODO: accept multiple args and do the apply chaining for us
 function bind(fn, monad) {
   return (
-    monad == null ? monad : // Empty raw value
+    isRawEmpty(monad) ? monad : // Empty raw value
     monad.chain ? monad.chain(fn) : // Monad
     monad.then ? monad.then(fn) : // Promise
     isArray(monad) ? Array.prototype.concat.apply([], monad.map(mapValues(fn))) : // Array
@@ -285,16 +275,20 @@ function isMaybeError(maybeMaybe) {
 }
 
 function valueOr(fallbackValue, maybeValue) {
-  return maybeValue == null || maybeValue !== maybeValue ? fallbackValue :
+  return isRawEmpty(maybeValue) ? fallbackValue :
     isMaybe(maybeValue) ? maybeValue.or(fallbackValue) : maybeValue;
 }
 
+function isRawEmpty(maybeValue) {
+  return maybeValue == null || maybeValue !== maybeValue;
+}
+
 function isValue(maybeValue) {
-  return !(maybeValue == null || maybeValue !== maybeValue || !isMaybe(maybeValue) || maybeValue.is());
+  return !(isRawEmpty(maybeValue) || !isMaybe(maybeValue) || maybeValue.is());
 }
 
 function assertValue(maybeValue) {
-  if (maybeValue == null || maybeValue !== maybeValue) {
+  if (isRawEmpty(maybeValue)) {
     throw new Error('Forced empty value: ' + maybeValue);
   }
   return isMaybe(maybeValue) ? maybeValue.get() : maybeValue;
