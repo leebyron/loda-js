@@ -276,7 +276,13 @@ console.log(
 // Compose a chain
 console.log(
   32,
-  (mul(2) >< add(3) >< div(10) >< neg)(-130)
+  (mul(2) <+ add(3) <+ div(10) <+ neg)(-130)
+)
+
+// Compose a chain
+console.log(
+  32,
+  (mul(2) <+ add(3) <+ div(10) <+ neg)(-130)
 )
 
 
@@ -294,7 +300,7 @@ function@ bb(n, y) {
 var e = 1;
 console.log(
   14,
-  (bb(10) >< aa)(e)
+  (aa +> bb(10))(e)
 );
 
 

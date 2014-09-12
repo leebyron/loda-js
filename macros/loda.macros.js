@@ -301,7 +301,8 @@ macro assignment {
  *     // h(x) equivalent to f(g(x))
  *
  */
-operator (><) 14 left { $l, $r } => #{ compose($l, $r) }
+operator (+>) 8 left { $l, $r } => #{ compose($r, $l) }
+operator (<+) 8 right { $l, $r } => #{ compose($l, $r) }
 
 
 
@@ -416,8 +417,8 @@ macro (<) {
  *     add <$> Maybe('johntra') <*> Maybe('volta') // Maybe "johntravolta"
  *
  */
-operator (<$>) 3 left { $l, $r } => #{ lift($l, $r) }
-operator (<*>) 3 left { $l, $r } => #{ ap($l, $r) }
+operator (<$>) 7 left { $l, $r } => #{ lift($l, $r) }
+operator (<*>) 7 left { $l, $r } => #{ ap($l, $r) }
 
 
 
@@ -441,8 +442,8 @@ operator (<*>) 3 left { $l, $r } => #{ ap($l, $r) }
  * It's a bummer as it would be nice to match Haskell muscle memory.
  * ">=>" is unclaimed and unambigous with JavaScript's function shorthand, "=>".
  */
-operator (>=>) 2 left { $l, $r } => #{ bind($r, $l) }
-operator (<=<) 2 right { $l, $r } => #{ bind($l, $r) }
+operator (>=>) 6 left { $l, $r } => #{ bind($r, $l) }
+operator (<=<) 6 right { $l, $r } => #{ bind($l, $r) }
 
 
 
@@ -534,7 +535,8 @@ export (?:)
 export (?)
 export (if)
 
-export (><)
+export (+>)
+export (<+)
 
 export (function@)
 export (function@@)
