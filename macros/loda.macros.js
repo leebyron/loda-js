@@ -365,13 +365,13 @@ macro (function@) {
  *
  */
 macro (@@) {
-  rule { $name:ident ( $args ... ) } => {
+  rule infix { $name:ident | ( $args ... ) } => {
     partialRight($name, $args ...)
   }
 }
 
 macro (@) {
-  rule { $name:ident ( $args ... ) } => {
+  rule infix { $name:ident | ( $args ... ) } => {
     partial($name, $args ...)
   }
 }

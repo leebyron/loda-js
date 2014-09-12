@@ -256,13 +256,13 @@ function whizBang(a, b, c) {
   return (a + b) * c;
 }
 
-var whiz10And12 = @whizBang(10, 12);
+var whiz10And12 = whizBang@(10, 12);
 console.log(
   286,
   whiz10And12(13)
 );
 
-var whizSomethingWith10And12 = @@whizBang(10, 12);
+var whizSomethingWith10And12 = whizBang@@(10, 12);
 console.log(
   276,
   whizSomethingWith10And12(13)
