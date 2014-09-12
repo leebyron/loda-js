@@ -92,12 +92,73 @@ macro (!) {
  *     console.log(c ?: 'oops'); // 0
  *
  */
-macro (?:) {
-  // a ?: b => valueOr(b, a)
-  rule infix { $maybe:expr | $otherwise:expr } => {
-    valueOr($otherwise, $maybe)
-  }
+operator (?:) 6 left { $maybe, $otherwise } => #{
+  valueOr($otherwise, $maybe)
 }
+
+
+// macro (<?)
+//   rule infix { $fn:expr | $maybe:expr } => {
+//     lift($fn, $maybe)
+//   }
+// }
+
+/**
+ * Lifting Maybe
+ * =============
+ *
+ * Lifting a monadic value into a function from with `?>`.
+ *
+ * Read `?>` as "If a value, then pass to function."
+ *
+ *     var double = x => x + x;
+ *     var a = Maybe(10);
+ *     var b = a ?> v => double(v);
+ *
+ * Or, since double takes one value:
+ *
+ *     var b = a ?> double;
+ *
+ */
+operator (?>) 7 left { $maybe, $fn } => #{
+  lift($fn, $maybe)
+}
+operator (<?) 7 right { $fn, $maybe } => #{
+  lift($fn, $maybe)
+}
+
+/**
+ * Applying Maybe
+ * ==============
+ *
+ * Applying a monadic function to a monadic value with `?>?`.
+ *
+ * Read `?>?` as "If this function and if that value, then pass value to function."
+ *
+ *     var double = x => x + x;
+ *     var d = Maybe(double);
+ *     var a = Maybe(10);
+ *     var b = a ?>? d;
+ *
+ */
+operator (?>?) 6 right { $appval, $appfn } => #{
+  ap($appfn, $appval)
+}
+operator (?<?) 6 left { $appfn, $appval } => #{
+  ap($appfn, $appval)
+}
+
+// operator (<$>) 7 left { $l, $r } => #{ lift($l, $r) }
+// operator (<*>) 7 left { $l, $r } => #{ ap($l, $r) }
+
+// Note: not sure about this yet - see macro on fn?(arg) below
+// macro (??) {
+//   rule infix { $appFn | ( $appArgs:expr ... ) } => {
+//     ap($fn, $appArgs ...)
+//   }
+// }
+
+// operator (<*>) 7 left { $l, $r } => #{ ap($l, $r) }
 
 
 
@@ -115,6 +176,24 @@ macro (?) {
   rule infix { $cond:expr | $then:expr : $otherwise:expr } => {
     $cond $[?] $then : $otherwise
   }
+
+  // Sweet JS only lets you look-back a single token, and this one is in a
+  // nested tree. Maybe SweetJS can't represent this.
+  // rule infix { $fn ( | $arg ) } => {
+  //   'how about'
+  // }
+
+  // Note: This seems at odds with the rule below which assumes the left
+  // expression is possibly empty, rather than the arguments.
+  // Below, this has the effect of applying a monadic function to a non-monadic
+  // value. We need a different syntax to illustrate that the argument may itself
+  // not exist. Then ideally these combine well to illustrate "ap" where both
+  // the function and arguments are monadic/optional.
+  // rule infix { $fn:expr | ( $monad:expr ... ) } => {
+  //   lift($fn, $monad ...)
+  // }
+
+
 
 
   /**
@@ -135,7 +214,7 @@ macro (?) {
    *
    *     var a = Maybe('abc');
    *     var b = a?.toUpperCase();
-   *     console.log(b); // Maybe
+   *     console.log(b); // Maybe "ABC"
    *     console.log(b!); // "ABC"
    *
    * An example with property access:
@@ -195,6 +274,7 @@ macro (?) {
   rule infix { $monad:expr | $access:access $chain:access ... } => {
     lift(function (v) { return v $access $chain ...; }, $monad)
   }
+
 
 
   /**
@@ -381,69 +461,26 @@ macro (@) {
 
 
 /**
- * Infix functions
- * ===============
- *
- * Call a function using infix notation.
- *
- * `1 <add> 2` is shorthand for `add(1, 2)`
- *
- * Note to Haskell fans:
- *
- * "``" collides with JavaScript's template string literals.
- *
- * TODO: ensure this doesn't collide with JSX
- */
-macro (<) {
-  rule infix { $first:expr | $func:ident > $second:expr } => {
-    ($func)($first, $second)
-  }
-  // Leave lt alone
-  rule {} => { $[<] }
-}
-
-
-
-/**
- * Lift and Apply
- * ==============
- *
- * Provides Haskell's infix operators for lift and ap, allowing for a more
- * natural style of chaining curried applicative functions.
- *
- * `x <$> y` is shorthand for `lift(x, y)`
- * `x <*> y` is shorthand for `ap(x, y)`
- *
- *     add <$> Maybe('johntra') <*> Maybe('volta') // Maybe "johntravolta"
- *
- */
-operator (<$>) 7 left { $l, $r } => #{ lift($l, $r) }
-operator (<*>) 7 left { $l, $r } => #{ ap($l, $r) }
-
-
-
-/**
  * Monadic chain
  * ============
  *
  * Binds the right function to the left monadic value.
  *
  *     var getInt = Maybe >< parseInt;
- *     var maybeNumber = Maybe("123") >=> getInt // Maybe 123
+ *     var maybeNumber = Maybe("123") ==> getInt // Maybe 123
  *
  * Go backwards if that's your jam.
  *
- *     var maybeNumber = getInt <=< Maybe("123") // Maybe 123
+ *     var maybeNumber = getInt <== Maybe("123") // Maybe 123
  *
  * Note to Haskell fans:
  *
  * ">>=" collides with JavaScript's "shift and assign" operator. It's not a
  * common operator, however colliding with it is probably a bad idea.
  * It's a bummer as it would be nice to match Haskell muscle memory.
- * ">=>" is unclaimed and unambigous with JavaScript's function shorthand, "=>".
  */
-operator (>=>) 6 left { $l, $r } => #{ chain($r, $l) }
-operator (<=<) 6 right { $l, $r } => #{ chain($l, $r) }
+operator (==>) 6 left { $l, $r } => #{ chain($r, $l) }
+operator (<==) 6 right { $l, $r } => #{ chain($l, $r) }
 
 
 
@@ -461,7 +498,7 @@ operator (<=<) 6 right { $l, $r } => #{ chain($l, $r) }
  *     }
  *
  * Haskell suggests [avoiding it](http://www.haskell.org/haskellwiki/Things_to_avoid#do_notation).
- * `$do` is simply sugar for `>=>
+ * `$do` is simply sugar for `==>`
  *
  * Instead of
  *
@@ -472,7 +509,7 @@ operator (<=<) 6 right { $l, $r } => #{ chain($l, $r) }
  *
  * you could write (assuming writeFile is curried)
  *
- *     readFile('foo') >=> writeFile('bar');
+ *     readFile('foo') ==> writeFile('bar');
  *
  * The code
  *
@@ -513,10 +550,10 @@ macro do_clause {
     $monad
   }
   rule { $arg:ident <- $monad:do_expr $rest ... } => {
-    $monad >=> function($arg) { return_do $rest ... }
+    $monad ==> function($arg) { return_do $rest ... }
   }
   rule { $monad:do_expr $rest ... } => {
-    $monad >=> function() { return_do $rest ... }
+    $monad ==> function() { return_do $rest ... }
   }
 }
 
@@ -529,23 +566,33 @@ macro return_do {
 }
 
 
+// Compose
+export (+>)
+export (<+)
 
+// lift
+export (?>)
+export (<?)
+
+// apply
+export (?>?)
+export (?<?)
+
+// chain
+export (==>)
+export (<==)
+
+// Maybe
 export (!)
 export (?:)
 export (?)
 export (if)
 
-export (+>)
-export (<+)
-
+// Curry
 export (function@)
 export (function@@)
 export (@)
 export (@@)
 
-export (<)
-export (<$>)
-export (<*>)
-export (>=>)
-export (<=<)
+// Do
 export ($do)

@@ -212,7 +212,7 @@ if (var aval = a) {
 var toUpperCase = decontextify(String.prototype.toUpperCase);
 
 var a = new Promise(function(resolve) { setTimeout(resolve, 1000, 'abc') });
-var b = a >=> toUpperCase;
+var b = a ==> toUpperCase;
 console.log(b); // Promise
 b.then(function (value) { console.log(value) }) // "ABC" (after a second)
  .catch(function (error) { console.log('Error:', error) });
@@ -238,18 +238,6 @@ var y = x?.toUpperCase()?.indexOf('B');
 console.log(y); // null
 
 
-
-// Calling functions infix style:
-console.log(
-  3,
-  1 <add> 2
-);
-
-// Comparisons are fine
-console.log(
-  true,
-  1 < 2 && 3 > 1
-);
 
 // Partial application
 function whizBang(a, b, c) {
@@ -279,9 +267,16 @@ console.log(
 );
 
 // Infix lift and ap
+
 console.log(
-  add <$> Maybe('johntra') <*> Maybe('volta')
+
+  Maybe('volta') ?>? Maybe('johntra') ?> add,
+  Maybe('johntra') ?> add ?<? Maybe('volta'),
+  add <? Maybe('johntra') ?<? Maybe('volta'),
+  // add?(Maybe('johntra'))??(Maybe('volta'))
+  'johntravolta?'
 );
+
 
 // Compose a chain
 console.log(
@@ -314,13 +309,13 @@ console.log(
 );
 
 
-1 >=> aa >=> bb(10) >=> (response) => {
+1 ==> aa ==> bb(10) ==> (response) => {
   console.log("JSON Response!", response);
 };
 
 (response) => {
   console.log("JSON Response!", response);
-} <=< bb(10) <=< aa <=< 1
+} <== bb(10) <== aa <== 1;
 
 
 
