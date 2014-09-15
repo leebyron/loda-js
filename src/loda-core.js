@@ -261,6 +261,8 @@ function chain(monad, fn) {
   return (
     isRawNone(monad) ? monad : // Raw none value
     monad.chain ? monad.chain(fn) : // Monad
+    monad.mapCat ? monad.mapCat(fn) : // Monad Alias
+    monad.flatMap ? monad.flatMap(fn) : // Monad Alias
     monad.then ? monad.then(fn) : // Promise
     isArray(monad) ? Array.prototype.concat.apply([], monad.map(mapValues(fn))) : // Array
     fn(monad) // Raw value
@@ -276,7 +278,7 @@ function chain(monad, fn) {
 // Value checking
 
 function isMaybe(maybeMaybe) {
-  return maybeMaybe.or && maybeMaybe.is && maybeMaybe.get && maybeMaybe.map;
+  return maybeMaybe.or && maybeMaybe.isValue && maybeMaybe.get && maybeMaybe.map;
 }
 
 function isMaybeError(maybeMaybe) {

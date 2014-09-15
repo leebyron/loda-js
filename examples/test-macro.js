@@ -20,7 +20,7 @@ var Promise = require('promise');
 
 
 
-a = Maybe({b:Maybe({c:Maybe(3),d:function(){return 'ddd';}})});
+var a = Maybe({b:Maybe({c:Maybe(3),d:function(){return 'ddd';}})});
 
 console.log(a);
 
