@@ -47,7 +47,7 @@ C -> C    (T -> T) lift aka lift
 // unit :: Promise<any> -> V -> Promise<V>
 if (applicative.then) { // is Promise
   return value instanceof Maybe ?
-    value.is() ?
+    value.isValue() ?
       Promise.accept(value.get()) :
       Promise.reject(value.isError() && value.getError()) :
     Promise.accept(value);

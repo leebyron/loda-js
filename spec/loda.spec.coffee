@@ -1000,19 +1000,19 @@ describe 'loda', ->
           none = Maybe.None
           error = Maybe.Error 'raw text error'
 
-          expect(Maybe.is maybeValue).toBe true
-          expect(Maybe.is maybeNone).toBe false
-          expect(Maybe.is maybeError).toBe false
-          expect(Maybe.is some).toBe true
-          expect(Maybe.is none).toBe false
-          expect(Maybe.is error).toBe false
+          expect(Maybe.isValue maybeValue).toBe true
+          expect(Maybe.isValue maybeNone).toBe false
+          expect(Maybe.isValue maybeError).toBe false
+          expect(Maybe.isValue some).toBe true
+          expect(Maybe.isValue none).toBe false
+          expect(Maybe.isValue error).toBe false
 
-          expect(maybeValue.is()).toBe true
-          expect(maybeNone.is()).toBe false
-          expect(maybeError.is()).toBe false
-          expect(some.is()).toBe true
-          expect(none.is()).toBe false
-          expect(error.is()).toBe false
+          expect(maybeValue.isValue()).toBe true
+          expect(maybeNone.isValue()).toBe false
+          expect(maybeError.isValue()).toBe false
+          expect(some.isValue()).toBe true
+          expect(none.isValue()).toBe false
+          expect(error.isValue()).toBe false
 
         it 'checks if a Maybe is a Maybe.Error (has an error)', ->
           maybeValue = Maybe 'abc'
@@ -1112,7 +1112,7 @@ describe 'loda', ->
           m2 = inc m1
           m3 = lift m2, spy
           expect(spy).not.toHaveBeenCalled()
-          expect(Maybe.is m3).toBe false
+          expect(Maybe.isValue m3).toBe false
 
         it 'has identity', ->
           a = Maybe 1

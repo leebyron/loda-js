@@ -40,7 +40,7 @@ function normalizeLibInfo(libInfo) {
 function getLibraries(libInfo) {
   return _.mapValM(function (dep) {
     var module = requireMaybe(dep.name);
-    if (module.is()) {
+    if (module.isValue()) {
       return unit(Promise, module);
     } else {
       var npmName = dep.name + '@' + dep.version;

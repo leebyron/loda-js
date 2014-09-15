@@ -296,7 +296,7 @@ function isRawNone(maybeValue) {
 }
 
 function isValue(maybeValue) {
-  return !(isRawNone(maybeValue) || isMaybe(maybeValue) && !maybeValue.is());
+  return !(isRawNone(maybeValue) || isMaybe(maybeValue) && !maybeValue.isValue());
 }
 
 function assertValue(maybeValue) {

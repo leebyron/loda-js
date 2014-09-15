@@ -730,7 +730,7 @@ function expand(fn, initialSeed) {
     var seed = initialSeed;
     return function() {
       var result = Maybe(fn(seed));
-      if (result.is()) {
+      if (result.isValue()) {
         var resultTuple = result.get();
         seed = resultTuple[0];
         return _iteratorValue(resultTuple[1]);
@@ -1075,7 +1075,7 @@ function promise(fn) {
   return new Promise(function (succeed, fail) {
     fn(function (value) {
       value instanceof Maybe || (value = Maybe(value));
-      value.is() ?
+      value.isValue() ?
         succeed(value.get()) :
         fail(value.isError() && value.getError());
     })
@@ -1098,8 +1098,8 @@ function Maybe(value) {
 }
 
 Maybe.of = Maybe;
-Maybe.is = function (maybe) {
-  return Maybe(maybe).is();
+Maybe.isValue = function (maybe) {
+  return Maybe(maybe).isValue();
 };
 Maybe.isError = function (maybe) {
   return Maybe(maybe).isError();
@@ -1135,7 +1135,8 @@ Maybe.prototype.inspect = function() {
 }
 
 Maybe.prototype.of = Maybe;
-Maybe.prototype.is =
+Maybe.prototype.isValue =
+Maybe.prototype.isNone =
 Maybe.prototype.isError = function() {
   return false;
 }
@@ -1166,7 +1167,7 @@ MaybeValue.prototype = Object.create(Maybe.prototype);
 MaybeValue.prototype.toString = function() {
   return 'Maybe.Value ' + this._value;
 }
-MaybeValue.prototype.is = function() {
+MaybeValue.prototype.isValue = function() {
   return true;
 }
 MaybeValue.prototype.or = function(fallback) {
@@ -1176,7 +1177,7 @@ MaybeValue.prototype.get = function() {
   return this._value;
 }
 MaybeValue.prototype.equals = function(maybe) {
-  return maybe.is() && is(this._value, maybe._value);
+  return maybe.isValue() && is(this._value, maybe._value);
 }
 MaybeValue.prototype.join = function() {
   return this._value instanceof Maybe ? this._value : this;
@@ -1198,6 +1199,9 @@ function MaybeNone() {
 MaybeNone.prototype = Object.create(Maybe.prototype);
 MaybeNone.prototype.toString = function() {
   return 'Maybe.None';
+}
+MaybeNone.prototype.isNone = function() {
+  return true;
 }
 MaybeNone.prototype.equals = function(maybe) {
   return maybe === MaybeNone;
