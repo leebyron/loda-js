@@ -199,7 +199,7 @@ function is(v1, v2) {
 // lift :: M a -> (a -> b) -> M b
 function lift(functor, fn) {
   return (
-    isRawEmpty(functor) ? functor : // Empty raw value
+    isRawNone(functor) ? functor : // Raw none value
     isCurried(fn) && fn.length > 1 && functor.chain ? // Create an Apply // TODO: should functor.then and isArray be included here?
       chain(functor, function (value) {
         return unit(functor, curry(partial(uncurry(fn), value), fn.length - 1));
@@ -217,7 +217,7 @@ var isArray = Array.isArray;
 
 function mapValues(mapper) {
   return function (value) {
-    return isRawEmpty(value) ? value : mapper(value);
+    return isRawNone(value) ? value : mapper(value);
   }
 }
 
@@ -227,7 +227,7 @@ function mapValues(mapper) {
 // AKA <*>
 function ap(appFn, appVal) {
   return (
-    isRawEmpty(appFn) ? appFn : isRawEmpty(appVal) ? appVal : // Empty raw value
+    isRawNone(appFn) ? appFn : isRawNone(appVal) ? appVal : // Raw none value
     appFn.ap ? appFn.ap(appVal) : // Apply
     appFn.chain || appFn.then || isArray(appFn) ? // Monad (TODO: match iterables)
       chain(appFn, function (fn) { return lift(appVal, fn); }) :
@@ -239,7 +239,7 @@ function ap(appFn, appVal) {
 // unit :: Promise<any> -> Maybe<V> -> Promise<V>
 // unit :: Promise<any> -> V -> Promise<V>
 function unit(applicative, value) {
-  if (isRawEmpty(applicative)) {
+  if (isRawNone(applicative)) {
     return applicative;
   }
   if (applicative.then) {
@@ -261,7 +261,7 @@ function unit(applicative, value) {
 // TODO: accept multiple args and do the apply chaining for us
 function chain(monad, fn) {
   return (
-    isRawEmpty(monad) ? monad : // Empty raw value
+    isRawNone(monad) ? monad : // Raw none value
     monad.chain ? monad.chain(fn) : // Monad
     monad.then ? monad.then(fn) : // Promise
     isArray(monad) ? Array.prototype.concat.apply([], monad.map(mapValues(fn))) : // Array
@@ -287,21 +287,21 @@ function isMaybeError(maybeMaybe) {
 }
 
 function valueOr(fallbackValue, maybeValue) {
-  return isRawEmpty(maybeValue) ? fallbackValue :
+  return isRawNone(maybeValue) ? fallbackValue :
     isMaybe(maybeValue) ? maybeValue.or(fallbackValue) : maybeValue;
 }
 
-function isRawEmpty(maybeValue) {
+function isRawNone(maybeValue) {
   return maybeValue == null || maybeValue !== maybeValue;
 }
 
 function isValue(maybeValue) {
-  return !(isRawEmpty(maybeValue) || isMaybe(maybeValue) && !maybeValue.is());
+  return !(isRawNone(maybeValue) || isMaybe(maybeValue) && !maybeValue.is());
 }
 
 function assertValue(maybeValue) {
-  if (isRawEmpty(maybeValue)) {
-    throw new Error('Forced empty value: ' + maybeValue);
+  if (isRawNone(maybeValue)) {
+    throw new Error('Forced none value: ' + maybeValue);
   }
   return isMaybe(maybeValue) ? maybeValue.get() : maybeValue;
 }
