@@ -196,8 +196,8 @@ function is(v1, v2) {
 //       the right thing to return an Apply
 // TODO: accept multiple args are do the apply chaining for us
 
-// lift :: M a -> (a -> b) -> M b
-function lift(functor, fn) {
+// map :: M a -> (a -> b) -> M b
+function map(functor, fn) {
   return (
     isRawNone(functor) ? functor : // Raw none value
     isArray(functor) ? functor.map(mapValues(fn)) :
@@ -224,7 +224,7 @@ function mapValues(mapper) {
 function apply(appFn, appVal) {
   return (
     appFn && appFn.ap ? appFn.ap(appVal) : // Apply
-    chain(appFn, function (fn) { return lift(appVal, fn); }) // Other
+    chain(appFn, function (fn) { return map(appVal, fn); }) // Other
   );
 }
 
@@ -330,7 +330,8 @@ global.uncurry = uncurry;
 global.isCurried = isCurried;
 
 global.is = curry(is);
-global.lift = curryRight(lift);
+
+global.map = curryRight(map);
 global.apply = curry(apply);
 global.unit = curry(unit);
 global.chain = curryRight(chain);

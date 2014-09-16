@@ -20,7 +20,7 @@ A -> A    call
 A -> B    nonsense
 
 B -> A    (T -> M<T>) chain
-B -> B    (T -> T) lift aka lift
+B -> B    (T -> T) map
 
 
 Promise<T>
@@ -34,12 +34,11 @@ A -> B    nonsense
 A -> C    nonsense
 
 B -> A    (Either<T> -> Promise<T>) chainResult
-B -> B    (Either<T> -> Either<T>) liftResult
 B -> C    nonsense
 
 C -> A    (T -> Promise<T>) chain
-C -> B    (T -> Either<T>) lift aka lift, alternative form
-C -> C    (T -> T) lift aka lift
+C -> B    (T -> Either<T>) map aka map, alternative form
+C -> C    (T -> T) map aka map
 
 
 // unit :: A<any> -> V -> A<V>
@@ -63,11 +62,11 @@ p = promise(function (resolve) { setTimeout(resolve, 300, 'hi') })
 q = promise(function (resolve) { setTimeout(resolve, 300, null) })
 
 // r = (+) <$> p <*> q
-// r = apply(lift(p, add), q);
+// r = apply(map(p, add), q);
 
-qa = liftResult(Maybe.or('default'), q);
+qa = chainResult(Maybe.or('default'), q);
 
-r = apply(lift(p, add), qa);
+r = apply(map(p, add), qa);
 r.then(function(){console.log('yes', arguments);}, function(e){console.log('no', e, e.stack);})
 
 
@@ -93,12 +92,12 @@ x2 = promise(function (resolve) {
 x2.then(function(){console.log('x2yes', arguments);}, function(e){console.log('x2no', e, e.stack);})
 
 // r = chain(
-//   lift(
+//   map(
 //     q,
-//     lift(add)
+//     map(add)
 //   ),
 //   function(maybeAddFn) {
-//     return lift(
+//     return map(
 //       p,
 //       apply(maybeAddFn)
 //     )
@@ -120,7 +119,7 @@ filterM(pred, [1,2,3,4,5]).then(function(v) { console.log('yay!', v); }, functio
 
 
 // Test w Maybe
-predMaybe = function(a) { return lift(Maybe(parseInt(a)), gt(3)) }
+predMaybe = function(a) { return map(Maybe(parseInt(a)), gt(3)) }
 console.log(
   Maybe.or('shit', filterM(predMaybe, ['1','2','3','4','5']))
 );

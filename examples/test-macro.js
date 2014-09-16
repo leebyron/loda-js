@@ -266,7 +266,7 @@ console.log(
   whizSomethingWith10And12(13)
 );
 
-// Infix lift and ap
+// Infix map and apply
 
 console.log(
 

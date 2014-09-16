@@ -116,10 +116,10 @@ operator (?:) 6 left { $maybe, $otherwise } => #{
  *
  */
 operator (?>) 7 left { $maybe, $fn } => #{
-  lift($maybe, $fn)
+  map($maybe, $fn)
 }
 operator (<?) 7 right { $fn, $maybe } => #{
-  lift($maybe, $fn)
+  map($maybe, $fn)
 }
 
 
@@ -170,7 +170,7 @@ macro (?) {
    *
    * Lifting property access and method calls from a monadic value with `?.`
    *
-   * Given a monadic value, such as Maybe or Promise, lift a property access or
+   * Given a monadic value, such as Maybe or Promise, map a property access or
    * a method call from the contained value.
    *
    * In other words: `a?.method()` calls `method` on `a` only
@@ -235,13 +235,13 @@ macro (?) {
    *     console.log(y); // null
    *
    */
-  // a?(x) => lift(a, function(v){return v(x);})
-  // a?.b => lift(a, function(v){return v.b;})
-  // a?[b] => lift(a, function(v){return v[b];})
-  // a?.b(x) => lift(a, function(v){return v.b(x);})
-  // a?[b](x) => lift(a, function(v){return v[b](x);})
+  // a?(x) => map(a, function(v){return v(x);})
+  // a?.b => map(a, function(v){return v.b;})
+  // a?[b] => map(a, function(v){return v[b];})
+  // a?.b(x) => map(a, function(v){return v.b(x);})
+  // a?[b](x) => map(a, function(v){return v[b](x);})
   rule infix { $monad:expr | $access:access $rest:access ... } => {
-    lift($monad, function (v) { return v $access $rest ...; })
+    map($monad, function (v) { return v $access $rest ...; })
   }
 
 
@@ -539,7 +539,7 @@ macro return_do {
 export (+>)
 export (<+)
 
-// lift
+// map
 export (?>)
 export (<?)
 

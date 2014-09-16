@@ -244,7 +244,7 @@ describe 'loda', ->
           { id: 5, name: 'Chris' },
           { id: 6, name: 'Dustin' }
         ]
-        pullID = map juxt get('id'), id
+        pullID = zipWith juxt get('id'), id
         expect(
           object pullID records
         ).toEqual {
@@ -261,7 +261,7 @@ describe 'loda', ->
         expect(incAndDec [ 10, 20 ]).toEqual [ 11, 19 ]
 
       it 'useful for describing maps of kv-iterables', ->
-        negVals = map knit id, neg
+        negVals = zipWith knit id, neg
         expect(
           object negVals { a: 1, b: 2, c: 3 }
         ).toEqual { a: -1, b: -2, c: -3 }
@@ -536,36 +536,36 @@ describe 'loda', ->
         expect(array filterBigNum [ 5, 10, 15, 20 ]).toEqual [ 15, 20 ]
 
 
-    describe 'map', ->
+    describe 'zipWith', ->
 
       # it 'mapx', ->
       #  expect(array mapx mul(2), [ 1, 2, 3, 4, 5 ]).toEqual [ 2, 4, 6, 8, 10 ]
 
       it 'uses a mapper to create a new lazy iterable', ->
-        mapped = map mul(2), [ 1, 2, 3, 4, 5 ]
+        mapped = zipWith mul(2), [ 1, 2, 3, 4, 5 ]
         expect(mapped.length).toBe undefined
         expect(array mapped).toEqual [ 2, 4, 6, 8, 10 ]
 
       it 'can be curried', ->
-        mapDouble = map mul 2
+        mapDouble = zipWith mul 2
         expect(array mapDouble [ 1, 2, 3, 4, 5 ]).toEqual [ 2, 4, 6, 8, 10 ]
 
       it 'can map multiple input iterables', ->
-        mapped = map add,
+        mapped = zipWith add,
           [ 1, 2, 3, 4, 5 ],
           [ 10, 20, 30, 40, 50 ],
           [ 100, 200, 300, 400, 500 ]
         expect(array mapped).toEqual [ 111, 222, 333, 444, 555 ]
 
       it 'result is length of shortest input', ->
-        mapped = map add,
+        mapped = zipWith add,
           [ 1, 2, 3, 4, 5 ],
           [ 10, 20, 30, 40 ],
           [ 100, 200, 300 ]
         expect(array mapped).toEqual [ 111, 222, 333 ]
 
       it 'maps objects as key-value tuples', ->
-        mapUpperDouble = map ([ k, v ]) -> [ k.toUpperCase(), mul(2, v) ]
+        mapUpperDouble = zipWith ([ k, v ]) -> [ k.toUpperCase(), mul(2, v) ]
         expect(
           object mapUpperDouble { a: 1, b: 2, c: 3 }
         ).toEqual { A: 2, B: 4, C: 6 }
@@ -624,7 +624,7 @@ describe 'loda', ->
 
       it 'caches an iterable', ->
         spyInc = jasmine.createSpy().andCallFake add 1
-        oneUp = map spyInc, [ 1, 2, 3, 4, 5 ]
+        oneUp = zipWith spyInc, [ 1, 2, 3, 4, 5 ]
 
         expect(array oneUp).toEqual [ 2, 3, 4, 5, 6 ]
         expect(spyInc.calls.length).toBe 5
@@ -641,7 +641,7 @@ describe 'loda', ->
 
       it 'handles a race', ->
         spyInc = jasmine.createSpy().andCallFake add 1
-        memoOneUp = memoIterable map spyInc, [ 0, 1, 2 ]
+        memoOneUp = memoIterable zipWith spyInc, [ 0, 1, 2 ]
 
         i1 = iterator memoOneUp
         i2 = iterator memoOneUp
@@ -816,7 +816,7 @@ describe 'loda', ->
         result = pipe(counter)(
           filter(isEven),
           take(3),
-          map(add 3),
+          zipWith(add 3),
           array
         )
         expect(result).toEqual [ 3, 5, 7 ]
@@ -1098,25 +1098,25 @@ describe 'loda', ->
 
       describe 'functor', ->
 
-        it 'can be provided to lift', ->
+        it 'can be provided to map', ->
           inc = add 1
           m1 = Maybe.Value 3
           expect(inc m1).not.toEqual 4
-          m2 = lift m1, inc
+          m2 = map m1, inc
           expect(Maybe.get m2).toBe 4
 
         it 'safely carries Maybe.None through calls', ->
-          inc = lift add 1
+          inc = map add 1
           spy = jasmine.createSpy()
           m1 = Maybe.None
           m2 = inc m1
-          m3 = lift m2, spy
+          m3 = map m2, spy
           expect(spy).not.toHaveBeenCalled()
           expect(Maybe.isValue m3).toBe false
 
         it 'has identity', ->
           a = Maybe 1
-          b = lift a, id
+          b = map a, id
           expect(eq a, b).toBe true
 
         it 'has composition', ->
@@ -1124,8 +1124,8 @@ describe 'loda', ->
           f = add 1
           g = mul 2
           expect(eq(
-            lift(a, (x) -> f(g(x))),
-            lift(lift(a, g), f)
+            map(a, (x) -> f(g(x))),
+            map(map(a, g), f)
           )).toBe true
 
       describe 'apply', ->
@@ -1143,16 +1143,16 @@ describe 'loda', ->
           expect(Maybe.or 'nuthin', sumC).toBe 'nuthin'
           expect(Maybe.isError sumC).toBe true
 
-        it 'lift of a curried function results in a maybe function', ->
+        it 'map of a curried function results in a maybe function', ->
           a = Maybe 1
           b = Maybe 3
           c = Maybe null
-          addAMaybe = lift a, add
+          addAMaybe = map a, add
           sumAB = apply addAMaybe, b
           expect(Maybe.or 'nuthin', sumAB).toBe 4
           sumAC = apply addAMaybe, c
           expect(Maybe.or 'nuthin', sumAC).toBe 'nuthin'
-          addCMaybe = lift c, add
+          addCMaybe = map c, add
           sumCB = apply addCMaybe, b
           expect(addCMaybe).toBe Maybe.None
           expect(Maybe.or 'nuthin', sumCB).toBe 'nuthin'
@@ -1162,7 +1162,7 @@ describe 'loda', ->
           t = Maybe mul 3
           v = Maybe 10
           expect(eq(
-            apply(apply(lift(s, (f) -> (g) -> (x) -> f(g(x))), t), v),
+            apply(apply(map(s, (f) -> (g) -> (x) -> f(g(x))), t), v),
             apply(s, apply(t, v))
           )).toBe true
 
@@ -1283,7 +1283,7 @@ describe 'loda', ->
 
 # p = new Promise(function (uh, oh) {oh('crap')})
 # Promise {[[PromiseStatus]]: "rejected", [[PromiseValue]]: "crap"}
-# lift(p, lift(function (x) { return x + x; })).then(function (x) {
+# map(p, map(function (x) { return x + x; })).then(function (x) {
 #  console.log('got', x); }).catch(function (e) { console.log('error', e); })
 # VM1771:2 error crap
 # Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
@@ -1291,7 +1291,7 @@ describe 'loda', ->
 
 # q = new Promise(function (uh, oh) {uh('hi')})
 # Promise {[[PromiseStatus]]: "resolved", [[PromiseValue]]: "hi"}
-# r = lift(lift(q, lift(add)), function (maybeFn) {
+# r = map(map(q, map(add)), function (maybeFn) {
 #  return ap(Maybe(3), maybeFn);})
 # Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
 # r.then(function(){console.log('yes', arguments);},

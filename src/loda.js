@@ -8,7 +8,7 @@
 
 /* global arity, compose, composeRight, partial, partialRight,
           curry, curryRight, uncurry, isCurried,
-          lift, apply, unit, chain, is */
+          map, apply, unit, chain, is */
 
 
 
@@ -124,10 +124,10 @@ function flip(fn) {
  *     var example = knit(add(1), sub(1))
  *     example(10)  // [11, 9]
  *
- * `juxt` can be useful in conjunction with `map` for converting an array into
+ * `juxt` can be useful in conjunction with `zipWith` for converting an array into
  * an object.
  *
- *     map(juxt(get('uid'), id), [ { uid: 'abc' }, { uid: 'xyz' } ])
+ *     zipWith(juxt(get('uid'), id), [ { uid: 'abc' }, { uid: 'xyz' } ])
  *     // { abc: { uid: 'abc' }, xyz: { uid: 'xyz' } }
  *
  * juxt(add(1), add(2))(10) is equivalent to apply([add(1), add(2)], [10])
@@ -161,7 +161,7 @@ function applyJuxtM(fns, args, index, monadType) {
   var fn = fns[index];
   var resultMonad = fn.apply(null, args);
   return chain(resultMonad, function (result) {
-    return lift(applyJuxtM(fns, args, index + 1, resultMonad), function (list) {
+    return map(applyJuxtM(fns, args, index + 1, resultMonad), function (list) {
       return list.length ? [result].concat(list) : [result];
     });
   });
@@ -177,11 +177,11 @@ function applyJuxtM(fns, args, index, monadType) {
  *
  * `knit` can be useful when mapping over key-value pairs such as objects.
  *
- *    map(knit(id, neg), { a: 1, b: 2, c: 3 }) // { a: -1, b: -2, c: -3 }
+ *    zipWith(knit(id, neg), { a: 1, b: 2, c: 3 }) // { a: -1, b: -2, c: -3 }
  *
  * Equivalent to:
  *
- *     compose(partial(compose, array), partial(partial, map, call), tuple)
+ *     compose(partial(compose, array), partial(partial, zipWith, call), tuple)
  *
  */
 function knit(/* ... */) {
@@ -383,7 +383,7 @@ function index(iterable) {
  * If using ES6, prefer the spread operator. These two uses are equivalent, but
  * the latter is idiomatic ES6 JavaScript.
  *
- *    var mapped = map(add(1), [1,2,3])
+ *    var mapped = zipWith(add(1), [1,2,3])
  *    var arr1 = array(mapped)
  *    var arr2 = [...mapped]
  *
@@ -433,7 +433,7 @@ var string = partial(reduce, add2, '');
  * for-of loop instead. These two uses are equivalent, but the latter is
  * idiomatic ES6 JavaScript.
  *
- *    var mapped = map(add(1), [1,2,3])
+ *    var mapped = zipWith(add(1), [1,2,3])
  *    doall(mapped, x => console.log(x))
  *    for (x of mapped) console.log(x)
  *
@@ -510,9 +510,9 @@ function filter(fn, iterable) {
 }
 
 /**
- * Map
+ * Zip
  */
-function map(fn, iterable) {
+function zipWith(fn, iterable) {
   var iterables = new Array(arguments.length - 1); for (var $_i = 1; $_i < arguments.length; ++$_i) iterables[$_i - 1] = arguments[$_i];
   return new LodaIterable(function () {
     var _iterators = selectArgs(iterables, 0, _iterator);
@@ -531,13 +531,13 @@ function map(fn, iterable) {
 }
 
 function mapVal(fn, iterable) {
-  return map(knit(id, fn), iterable)
+  return zipWith(knit(id, fn), iterable)
 }
 
 /**
  * Zip
  */
-var zip = partial(map, tuple);
+var zip = partial(zipWith, tuple);
 var unzip = compose(partial(call, zip), _iterable);
 
 /**
@@ -566,7 +566,7 @@ function concat(listOfLists) {
   });
 }
 
-var mapCat = curry(compose(concat, map));
+var flatMap = curry(compose(concat, zipWith));
 
 
 /**
@@ -922,7 +922,7 @@ function arrayM(monadList, monadType) {
   }
   var list = unit(step.value, []);
   while (true) {
-    list = apply(lift(list, curriedPushIn), step.value);
+    list = apply(map(list, curriedPushIn), step.value);
     step = iter.next();
     if (step.done !== false) return list;
   }
@@ -932,10 +932,6 @@ var curriedPushIn = curry(pushIn);
 
 
 
-
-function liftResult(fn, promise) {
-  return chainResult(function (a) { return unit(promise, fn(a)); }, promise);
-}
 
 function chainResult(fn, promise) {
   if (promise.then) { // is Promise
@@ -992,7 +988,7 @@ function filterMDeep(predicate, array, index, monadType) {
   var value = array[index];
   var passMonad = predicate(value);
   return chain(passMonad, function (pass) {
-    return lift(filterMDeep(predicate, array, index + 1, passMonad), function (list) {
+    return map(filterMDeep(predicate, array, index + 1, passMonad), function (list) {
       return list.length ?
         pass ? [value].concat(list) : list :
         pass ? [value] : [];
@@ -1002,13 +998,13 @@ function filterMDeep(predicate, array, index, monadType) {
 
 
 // mapM :: Monad m => (a -> m b) -> [a] -> m [b]
-var mapM = compose(arrayM, map);
+var mapM = compose(arrayM, zipWith);
 
 function mapValM(fn, iterable) {
-  return arrayM(map(function (kv) {
+  return arrayM(zipWith(function (kv) {
     var k = kv[0];
     var v = kv[1];
-    return lift(fn(v), partial(tuple, k));
+    return map(fn(v), partial(tuple, k));
   }, iterable));
 }
 
@@ -1027,14 +1023,14 @@ function mapValM(fn, iterable) {
 //   var step = iter.next();
 //   if (step.done !== false) return result;
 //   result = predicate(step.value);
-//   result = lift(result, function (passed) {
+//   result = map(result, function (passed) {
 //     return passed ? [step.value] : [];
 //   });
 
 //   while (true) {
 //     step = iter.next();
 //     if (step.done !== false) return result;
-//     result = lift(predicate(step.value), function (passed) {
+//     result = map(predicate(step.value), function (passed) {
 //       return
 //     });
 //   }
@@ -1308,12 +1304,12 @@ module.exports = loda = {
   'count': count,
   'take': curry(take, 2),
   'filter': curry(filter, 2),
-  'map': curry(map, 2),
   'mapVal': curry(mapVal, 2),
+  'zipWith': curry(zipWith, 2),
   'zip': curry(zip, 2),
   'unzip': unzip, // TODO: test
   'concat': concat,
-  'mapCat': mapCat,
+  'flatMap': flatMap,
   'flatten': flatten,
   'memoIterable': memoIterable,
   'join': join,
@@ -1355,7 +1351,6 @@ module.exports = loda = {
   'arrayM': arrayM,
 
   'promise': curry(promise),
-  'liftResult': curry(liftResult),
   'chainResult': curry(chainResult),
 
   'Maybe': Maybe,
