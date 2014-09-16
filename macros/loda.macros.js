@@ -2,8 +2,8 @@
  * Macros
  * ------
  *
- * Loda provides sweet.js macros to greatly ease developing in loda's
- * opinionated style of unit functions and monadic values.
+ * Loda provides sweet.js macros to greatly ease developing in an
+ * opinionated style of pure functions and monadic values.
  *
  * Use of these Macros assumes that Loda has been globally installed.
  *
@@ -346,7 +346,7 @@ macro assignment {
  * Functional composition
  * ======================
  *
- *     var h = f >< g;
+ *     var h = g +> f;
  *     // h(x) equivalent to f(g(x))
  *
  */
@@ -376,7 +376,7 @@ operator (<+) 8 right { $l, $r } => #{ compose($l, $r) }
  *       }
  *     }
  *
- * Note: this results in a variable declaration, so `function$` is not
+ * Note: this results in a variable declaration, so `function@` is not
  * [hoisted](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Scope_Cheatsheet#Hoisting)
  * like regular functions. Be aware of this limitation when defining
  * curried functions.
@@ -431,11 +431,11 @@ macro (@) {
 
 /**
  * Monadic chain
- * ============
+ * =============
  *
  * Binds the right function to the left monadic value.
  *
- *     var getInt = Maybe >< parseInt;
+ *     var getInt = parseInt +> Maybe;
  *     var maybeNumber = Maybe("123") ==> getInt // Maybe 123
  *
  * Go backwards if that's your jam.
