@@ -139,10 +139,10 @@ operator (<?) 7 right { $fn, $maybe } => #{
  *
  */
 operator (?>?) 6 right { $appval, $appfn } => #{
-  ap($appfn, $appval)
+  apply($appfn, $appval)
 }
 operator (?<?) 6 left { $appfn, $appval } => #{
-  ap($appfn, $appval)
+  apply($appfn, $appval)
 }
 
 

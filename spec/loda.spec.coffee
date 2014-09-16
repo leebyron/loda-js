@@ -39,24 +39,24 @@ describe 'loda', ->
 
 
 
-    describe 'apply', ->
+    describe 'call', ->
 
       it 'calls a function with an array of arguments', ->
         spy = jasmine.createSpy()
-        apply spy, [1, 2, 3]
+        call spy, [1, 2, 3]
         expect(spy).toHaveBeenCalledWith 1, 2, 3
 
-      it 'can apply with a thisArg', ->
+      it 'can call with a thisArg', ->
         thisArg = {}
         spy = jasmine.createSpy()
-        apply spy, [1, 2, 3], thisArg
+        call spy, [1, 2, 3], thisArg
         expect(spy).toHaveBeenCalledWith 1, 2, 3
         expect(spy.mostRecentCall.object).toBe thisArg
 
       it 'is curried', ->
         thisArg = {}
         spy = jasmine.createSpy()
-        spy2 = apply spy
+        spy2 = call spy
         spy2 [1, 2, 3], thisArg
         expect(spy).toHaveBeenCalledWith 1, 2, 3
         expect(spy.mostRecentCall.object).toBe thisArg
@@ -589,13 +589,13 @@ describe 'loda', ->
           [ 4, 5, 6 ],
           [ 7, 8, 9 ]
         ]
-        flippedMatrix = array apply zip, matrix
+        flippedMatrix = array call zip, matrix
         expect(flippedMatrix).toEqual [
           [ 1, 4, 7 ],
           [ 2, 5, 8 ],
           [ 3, 6, 9 ]
         ]
-        flippedBack = array apply zip, flippedMatrix
+        flippedBack = array call zip, flippedMatrix
         expect(flippedBack).toEqual matrix
 
 
@@ -1135,9 +1135,9 @@ describe 'loda', ->
           b = Maybe null
           c = Maybe new Error 'fatal'
           add3Maybe = Maybe add 3
-          sumA = ap add3Maybe, a
-          sumB = ap add3Maybe, b
-          sumC = ap add3Maybe, c
+          sumA = apply add3Maybe, a
+          sumB = apply add3Maybe, b
+          sumC = apply add3Maybe, c
           expect(Maybe.or 'nuthin', sumA).toBe 4
           expect(Maybe.or 'nuthin', sumB).toBe 'nuthin'
           expect(Maybe.or 'nuthin', sumC).toBe 'nuthin'
@@ -1148,12 +1148,12 @@ describe 'loda', ->
           b = Maybe 3
           c = Maybe null
           addAMaybe = lift a, add
-          sumAB = ap addAMaybe, b
+          sumAB = apply addAMaybe, b
           expect(Maybe.or 'nuthin', sumAB).toBe 4
-          sumAC = ap addAMaybe, c
+          sumAC = apply addAMaybe, c
           expect(Maybe.or 'nuthin', sumAC).toBe 'nuthin'
           addCMaybe = lift c, add
-          sumCB = ap addCMaybe, b
+          sumCB = apply addCMaybe, b
           expect(addCMaybe).toBe Maybe.None
           expect(Maybe.or 'nuthin', sumCB).toBe 'nuthin'
 
@@ -1162,8 +1162,8 @@ describe 'loda', ->
           t = Maybe mul 3
           v = Maybe 10
           expect(eq(
-            ap(ap(lift(s, (f) -> (g) -> (x) -> f(g(x))), t), v),
-            ap(s, ap(t, v))
+            apply(apply(lift(s, (f) -> (g) -> (x) -> f(g(x))), t), v),
+            apply(s, apply(t, v))
           )).toBe true
 
       describe 'applicative', ->
@@ -1177,7 +1177,7 @@ describe 'loda', ->
           a = Maybe
           v = Maybe 123
           expect(eq(
-            ap(unit(a, id), v),
+            apply(unit(a, id), v),
             v
           )).toBe true
 
@@ -1186,7 +1186,7 @@ describe 'loda', ->
           f = add 2
           x = 1
           expect(eq(
-            ap(unit(a, f), unit(a, x)),
+            apply(unit(a, f), unit(a, x)),
             unit(a, f x)
           )).toBe true
 
@@ -1195,8 +1195,8 @@ describe 'loda', ->
           u = Maybe mul 2
           x = 1
           expect(eq(
-            ap(u, unit(a, x)),
-            ap(unit(a, (f) -> f x), u)
+            apply(u, unit(a, x)),
+            apply(unit(a, (f) -> f x), u)
           )).toBe true
 
       describe 'chain', ->

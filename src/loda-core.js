@@ -204,7 +204,7 @@ function lift(functor, fn) {
       }) :
     isArray(functor) ? functor.map(mapValues(fn)) :
     functor.map ? functor.map(fn) : // Functor
-    functor.ap ? ap(unit(functor, fn), functor) : // Apply
+    functor.ap ? apply(unit(functor, fn), functor) : // Apply
     functor.chain && functor.of || functor.then ? // is Monad
       chain(functor, function (value) { return unit(functor, fn(value)); }) :
     fn(functor) // Raw value
@@ -223,13 +223,10 @@ function mapValues(mapper) {
 
 // TODO: handle curried case
 // AKA <*>
-function ap(appFn, appVal) {
+function apply(appFn, appVal) {
   return (
-    isRawNone(appFn) ? appFn : isRawNone(appVal) ? appVal : // Raw none value
-    appFn.ap ? appFn.ap(appVal) : // Apply
-    appFn.chain || appFn.then || isArray(appFn) ? // Monad (TODO: match iterables)
-      chain(appFn, function (fn) { return lift(appVal, fn); }) :
-    appFn(appVal) // Raw value
+    appFn && appFn.ap ? appFn.ap(appVal) : // Apply
+    chain(appFn, function (fn) { return lift(appVal, fn); }) // Other
   );
 }
 
@@ -336,7 +333,7 @@ global.isCurried = isCurried;
 
 global.is = curry(is);
 global.lift = curryRight(lift);
-global.ap = curry(ap);
+global.apply = curry(apply);
 global.unit = curry(unit);
 global.chain = curryRight(chain);
 

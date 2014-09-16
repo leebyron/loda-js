@@ -8,7 +8,7 @@
 
 /* global arity, compose, composeRight, partial, partialRight,
           curry, curryRight, uncurry, isCurried,
-          lift, ap, unit, chain, is */
+          lift, apply, unit, chain, is */
 
 
 
@@ -41,20 +41,14 @@ function install(global) {
  * Apply
  */
 // TODO: test that iterable can be used as an argList
-function apply(fn, argList, thisArg) {
+function call(fn, argList, thisArg) {
   if (!isArray(argList)) {
     if (!isIterable(argList)) {
       throw new TypeError('Invalid argument list ' + argList);
     }
     argList = array(argList);
   }
-  if (typeof fn === 'function') {
-    return fn.apply(thisArg || this, argList);
-  }
-  if (isIterable(fn)) {
-    return array(ap(fn, argList));
-  }
-  throw new TypeError('Invalid function: ' + fn);
+  return fn.apply(thisArg || this, argList);
 }
 
 
@@ -544,7 +538,7 @@ function mapVal(fn, iterable) {
  * Zip
  */
 var zip = partial(map, tuple);
-var unzip = compose(partial(apply, zip), _iterable);
+var unzip = compose(partial(call, zip), _iterable);
 
 /**
  * Concat
@@ -838,7 +832,7 @@ function tuple(/* ... */) {
  */
 function pipe() {
   var $_arguments = new Array(arguments.length); for (var $_i = 0; $_i < arguments.length; ++$_i) $_arguments[$_i] = arguments[$_i];
-  return compose(partialRight(apply, $_arguments), composeRight);
+  return compose(partialRight(call, $_arguments), composeRight);
 }
 
 
@@ -928,7 +922,7 @@ function arrayM(monadList, monadType) {
   }
   var list = unit(step.value, []);
   while (true) {
-    list = ap(lift(list, curriedPushIn), step.value);
+    list = apply(lift(list, curriedPushIn), step.value);
     step = iter.next();
     if (step.done !== false) return list;
   }
@@ -1292,7 +1286,7 @@ var isArray = Array.isArray || function (maybeArray) {
 module.exports = loda = {
   'install': install,
 
-  'apply': curry(apply, 2),
+  'call': curry(call, 2),
 
   'decontextify': decontextify,
   'contextify': contextify,
