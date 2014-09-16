@@ -1037,18 +1037,18 @@ describe 'loda', ->
           expect(none.isError()).toBe false
           expect(error.isError()).toBe true
 
-      describe 'get', ->
+      describe 'getValue', ->
 
         it 'returns the contained value or throws', ->
           some = Maybe.Value 'abc'
           none = Maybe.None
           error = Maybe.Error 'fatal'
-          expect(Maybe.get some).toEqual 'abc'
-          expect(some.get()).toEqual 'abc'
-          expect(-> Maybe.get none).toThrow()
-          expect(-> none.get()).toThrow()
-          expect(-> Maybe.get error).toThrow()
-          expect(-> error.get()).toThrow()
+          expect(Maybe.getValue some).toEqual 'abc'
+          expect(some.getValue()).toEqual 'abc'
+          expect(-> Maybe.getValue none).toThrow()
+          expect(-> none.getValue()).toThrow()
+          expect(-> Maybe.getValue error).toThrow()
+          expect(-> error.getValue()).toThrow()
 
         it 'returns the contained error or throws', ->
           some = Maybe.Value 'abc'
@@ -1061,21 +1061,21 @@ describe 'loda', ->
           expect(Maybe.getError error).toEqual 'fatal'
           expect(error.getError()).toEqual 'fatal'
 
-      describe 'or', ->
+      describe 'valueOr', ->
 
         it 'returns a value', ->
           some = Maybe.Value 'abc'
           none = Maybe.None
           error = Maybe.Error 'fatal'
-          expect(Maybe.or '123', some).toEqual 'abc'
-          expect(some.or '123').toEqual 'abc'
-          expect(Maybe.or '123', none).toEqual '123'
-          expect(none.or '123').toEqual '123'
-          expect(Maybe.or '123', error).toEqual '123'
-          expect(error.or '123').toEqual '123'
+          expect(Maybe.valueOr '123', some).toEqual 'abc'
+          expect(some.valueOr '123').toEqual 'abc'
+          expect(Maybe.valueOr '123', none).toEqual '123'
+          expect(none.valueOr '123').toEqual '123'
+          expect(Maybe.valueOr '123', error).toEqual '123'
+          expect(error.valueOr '123').toEqual '123'
 
         it 'is curried', ->
-          or123 = Maybe.or '123'
+          or123 = Maybe.valueOr '123'
           some = Maybe.Value 'abc'
           none = Maybe.None
           error = Maybe.Error 'fatal'
@@ -1104,7 +1104,7 @@ describe 'loda', ->
           m1 = Maybe.Value 3
           expect(inc m1).not.toEqual 4
           m2 = map m1, inc
-          expect(Maybe.get m2).toBe 4
+          expect(Maybe.getValue m2).toBe 4
 
         it 'safely carries Maybe.None through calls', ->
           spy = jasmine.createSpy()
@@ -1138,9 +1138,9 @@ describe 'loda', ->
           sumA = apply add3Maybe, a
           sumB = apply add3Maybe, b
           sumC = apply add3Maybe, c
-          expect(Maybe.or 'nuthin', sumA).toBe 4
-          expect(Maybe.or 'nuthin', sumB).toBe 'nuthin'
-          expect(Maybe.or 'nuthin', sumC).toBe 'nuthin'
+          expect(Maybe.valueOr 'nuthin', sumA).toBe 4
+          expect(Maybe.valueOr 'nuthin', sumB).toBe 'nuthin'
+          expect(Maybe.valueOr 'nuthin', sumC).toBe 'nuthin'
           expect(Maybe.isError sumC).toBe true
 
         it 'map of a curried function results in a maybe function', ->
@@ -1149,13 +1149,13 @@ describe 'loda', ->
           c = Maybe null
           addAMaybe = map a, add
           sumAB = apply addAMaybe, b
-          expect(Maybe.or 'nuthin', sumAB).toBe 4
+          expect(Maybe.valueOr 'nuthin', sumAB).toBe 4
           sumAC = apply addAMaybe, c
-          expect(Maybe.or 'nuthin', sumAC).toBe 'nuthin'
+          expect(Maybe.valueOr 'nuthin', sumAC).toBe 'nuthin'
           addCMaybe = map c, add
           sumCB = apply addCMaybe, b
           expect(addCMaybe).toBe Maybe.None
-          expect(Maybe.or 'nuthin', sumCB).toBe 'nuthin'
+          expect(Maybe.valueOr 'nuthin', sumCB).toBe 'nuthin'
 
         it 'has composition', ->
           s = Maybe add 3
@@ -1170,14 +1170,14 @@ describe 'loda', ->
 
         it 'returns a new Maybe with the value', ->
           a = Maybe.None
-          b = unit(a, 3)
-          expect(Maybe.get b).toBe 3
+          b = a.of(3)
+          expect(Maybe.getValue b).toBe 3
 
         it 'has identity', ->
           a = Maybe
           v = Maybe 123
           expect(eq(
-            apply(unit(a, id), v),
+            apply(a.of(id), v),
             v
           )).toBe true
 
@@ -1186,8 +1186,8 @@ describe 'loda', ->
           f = add 2
           x = 1
           expect(eq(
-            apply(unit(a, f), unit(a, x)),
-            unit(a, f x)
+            apply(a.of(f), a.of(x)),
+            a.of(f x)
           )).toBe true
 
         it 'has interchange', ->
@@ -1195,8 +1195,8 @@ describe 'loda', ->
           u = Maybe mul 2
           x = 1
           expect(eq(
-            apply(u, unit(a, x)),
-            apply(unit(a, (f) -> f x), u)
+            apply(u, a.of(x)),
+            apply(a.of((f) -> f x), u)
           )).toBe true
 
       describe 'chain', ->
@@ -1205,19 +1205,21 @@ describe 'loda', ->
           toInt = (x) ->
             n = parseInt x
             unless isNaN(n) then Maybe n else Maybe.None
-          expect(Maybe.or 'nothin', chain(Maybe('123'), toInt)).toBe 123
-          expect(Maybe.or 'nothin', chain(Maybe('abc'), toInt)).toBe 'nothin'
-          expect(Maybe.or 'nothin', chain(Maybe.None, toInt)).toBe 'nothin'
+          expect(Maybe.valueOr 'nothin', chain(Maybe('123'), toInt)).toBe 123
+          expect(
+            Maybe.valueOr 'nothin', chain(Maybe('abc'), toInt)
+          ).toBe 'nothin'
+          expect(Maybe.valueOr 'nothin', chain(Maybe.None, toInt)).toBe 'nothin'
 
         it 'can chain chains', ->
           doubleOrDie = (x) -> Maybe( x * 2 if x < 8 )
-          expect(Maybe.or 'die',
+          expect(Maybe.valueOr 'die',
             chain(Maybe(1), doubleOrDie)
           ).toBe 2
-          expect(Maybe.or 'die',
+          expect(Maybe.valueOr 'die',
             chain(chain(chain(Maybe(1), doubleOrDie), doubleOrDie), doubleOrDie)
           ).toBe 8
-          expect(Maybe.or 'die',
+          expect(Maybe.valueOr 'die',
             chain(
               chain(
                 chain(
@@ -1232,17 +1234,17 @@ describe 'loda', ->
         it 'can chain chains using pipe', ->
           doubleOrDie = (x) -> Maybe( x * 2 if x < 8 )
           pipeMaybe1 = pipe Maybe 1
-          expect(Maybe.or 'die',
+          expect(Maybe.valueOr 'die',
             pipeMaybe1 partialRight(chain, doubleOrDie)
           ).toBe 2
-          expect(Maybe.or 'die',
+          expect(Maybe.valueOr 'die',
             pipeMaybe1(
               partialRight(chain, doubleOrDie),
               partialRight(chain, doubleOrDie),
               partialRight(chain, doubleOrDie)
             )
           ).toBe 8
-          expect(Maybe.or 'die',
+          expect(Maybe.valueOr 'die',
             pipeMaybe1(
               partialRight(chain, doubleOrDie),
               partialRight(chain, doubleOrDie),
@@ -1267,14 +1269,14 @@ describe 'loda', ->
           f = (x) -> Maybe x + 1
           a = 3
           expect(eq(
-            chain(unit(m, a), f),
+            chain(m.of(a), f),
             f(a)
           )).toBe true
 
         it 'has right identity', ->
           m = Maybe 3
           expect(eq(
-            chain(m, partial(unit, m)),
+            chain(m, (v) -> m.of(v)),
             m
           )).toBe true
 

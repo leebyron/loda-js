@@ -9,7 +9,7 @@
 
 /* global arity, compose, composeRight, partial, partialRight,
           curry, curryRight, uncurry, isCurried,
-          map, apply, unit, chain, equals */
+          map, apply, of, chain, equals */
 
 
 
@@ -157,7 +157,7 @@ function juxtM(/* ... */) {
 
 function applyJuxtM(fns, args, index, monadType) {
   if (index >= fns.length) {
-    return unit(monadType, []);
+    return of(monadType, []);
   }
   var fn = fns[index];
   var resultMonad = fn.apply(null, args);
@@ -724,7 +724,7 @@ function expand(fn, initialSeed) {
     return function() {
       var result = Maybe(fn(seed));
       if (result.isValue()) {
-        var resultTuple = result.get();
+        var resultTuple = result.getValue();
         seed = resultTuple[0];
         return _iteratorValue(resultTuple[1]);
       }
@@ -919,9 +919,9 @@ function arrayM(monadList, monadType) {
   var iter = _iterator(monadList);
   var step = iter.next();
   if (step.done !== false) {
-    return monadType ? unit(monadType, []) : [];
+    return monadType ? of(monadType, []) : [];
   }
-  var list = unit(step.value, []);
+  var list = of(step.value, []);
   while (true) {
     list = apply(map(list, curriedPushIn), step.value);
     step = iter.next();
@@ -953,7 +953,7 @@ function joinM(joinable) {
     // Promise/A+ joins itself.
     return joinable;
     // return chain(joinable, function (result) {
-    //   return result.then ? result : unit(joinable, result);
+    //   return result.then ? result : of(joinable, result);
     // });
   }
   if (joinable.join) {
@@ -984,7 +984,7 @@ function filterM(predicate, iterable, monadType) {
 
 function filterMDeep(predicate, array, index, monadType) {
   if (index >= array.length) {
-    return unit(monadType ? monadType : predicate(), []);
+    return of(monadType ? monadType : predicate(), []);
   }
   var value = array[index];
   var passMonad = predicate(value);
@@ -1065,7 +1065,7 @@ function promise(fn) {
     fn(function (value) {
       value instanceof Maybe || (value = Maybe(value));
       value.isValue() ?
-        succeed(value.get()) :
+        succeed(value.getValue()) :
         fail(value.isError() && value.getError());
     })
   })
@@ -1093,11 +1093,11 @@ Maybe.isValue = function (maybe) {
 Maybe.isError = function (maybe) {
   return Maybe(maybe).isError();
 };
-Maybe.or = curry(function (fallback, maybe) {
-  return Maybe(maybe).or(fallback);
+Maybe.valueOr = curry(function (fallback, maybe) {
+  return Maybe(maybe).valueOr(fallback);
 });
-Maybe.get = function (maybe) {
-  return Maybe(maybe).get();
+Maybe.getValue = function (maybe) {
+  return Maybe(maybe).getValue();
 };
 Maybe.getError = function (maybe) {
   return Maybe(maybe).getError();
@@ -1129,10 +1129,10 @@ Maybe.prototype.isNone =
 Maybe.prototype.isError = function() {
   return false;
 }
-Maybe.prototype.or = function(fallback) {
+Maybe.prototype.valueOr = function(fallback) {
   return fallback;
 }
-Maybe.prototype.get = function() {
+Maybe.prototype.getValue = function() {
   throw new Error('Cannot get a value from ' + this);
 }
 Maybe.prototype.getError = function() {
@@ -1157,10 +1157,10 @@ MaybeValue.prototype = Object.create(Maybe.prototype);
 MaybeValue.prototype.toString = function() {
   return 'Maybe.Value( ' + this._value + ' )';
 }
-MaybeValue.prototype.or = function(fallback) {
+MaybeValue.prototype.valueOr = function(fallback) {
   return this._value;
 }
-MaybeValue.prototype.get = function() {
+MaybeValue.prototype.getValue = function() {
   return this._value;
 }
 MaybeValue.prototype.equals = function(maybe) {

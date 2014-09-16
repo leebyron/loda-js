@@ -37,7 +37,7 @@ console.log(a);
 // if we want to force our way to the 3, we can do this:
 
 console.log(
-  a.get().b.get().c.get()
+  a.getValue().b.getValue().c.getValue()
 );
 
 // But that's annoying. We can use the post-fix ! operator instead:
@@ -73,13 +73,13 @@ console.log(c!.toUpperCase()) // logs "ABC"
 // But forcing could throw! Let's do this in a safe way:
 
 console.log(
-  chain(chain(a, get('b')), get('c')).or('bust')
+  chain(chain(a, get('b')), get('c')).valueOr('bust')
 );
 
 // Yikes. With better syntax this time:
 
 console.log(
-  a?.b?.c.or('bust')
+  a?.b?.c.valueOr('bust')
 );
 
 // Another way to say that (especially if we're dealing with raw values:)
@@ -121,7 +121,7 @@ console.log(
 var cString = 'c';
 console.log(
   3,
-  a?['b']?[cString].or('bust')
+  a?['b']?[cString].valueOr('bust')
 );
 
 // And function calls
@@ -452,7 +452,7 @@ console.log(
 );
 
 
-// Test promises with unit:
+// Test promises with of:
 
 var pa = new Promise(function (resolve) {
   setTimeout(function () {

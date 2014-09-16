@@ -49,9 +49,9 @@ macro (!) {
     $[!] $negatable
   }
 
-  // a! => assertValue(a)
+  // a! => getValue(a)
   rule infix { $maybe:expr | } => {
-    assertValue($maybe)
+    getValue($maybe)
   }
 }
 
@@ -93,7 +93,7 @@ macro (!) {
  *
  */
 operator (?:) 6 left { $maybe, $otherwise } => #{
-  valueOr($otherwise, $maybe)
+  valueOr($maybe, $otherwise)
 }
 
 

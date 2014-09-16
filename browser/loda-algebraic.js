@@ -20,11 +20,9 @@
 
 // equals :: a -> b -> boolean
 function equals(v1, v2) {
-  return (
-    v1 === 0 && v2 === 0 && 1 / v1 === 1 / v2 ||
+  return !!(
     v1 === v2 ||
-    v1 !== v1 && v2 !== v2 ||
-    !!v1 && typeof v1.equals === 'function' && v1.equals(v2)
+    v1 && typeof v1.equals === 'function' && v1.equals(v2)
   );
 }
 
@@ -34,9 +32,9 @@ function map(functor, fn) {
     isRawNone(functor) ? functor : // Raw none value
     isArray(functor) ? functor.map(mapValues(fn)) :
     functor.map ? functor.map(fn) : // Functor
-    functor.ap && functor.of ? apply(unit(functor, fn), functor) : // Apply
+    functor.ap && functor.of ? apply(of(functor, fn), functor) : // Apply
     functor.chain && functor.of || functor.then ? // is Monad
-      chain(functor, function (value) { return unit(functor, fn(value)); }) :
+      chain(functor, function (value) { return of(functor, fn(value)); }) :
     fn(functor) // Raw value
   );
 }
@@ -58,10 +56,10 @@ function apply(appFn, appVal) {
   );
 }
 
-// unit :: M a -> b -> M b
-// unit :: Promise a -> b -> Promise b
-// unit :: Promise a -> Maybe b -> Promise b
-function unit(applicative, value) {
+// of :: M a -> b -> M b
+// of :: Promise a -> b -> Promise b
+// of :: Promise a -> Maybe b -> Promise b
+function of(applicative, value) {
   return (
     isRawNone(applicative) ? applicative : // Raw none value
     applicative.of ? applicative.of(value) : // Applicative
@@ -69,7 +67,7 @@ function unit(applicative, value) {
     isArray(applicative) ? isValue(value) ? [] : [value] : // Array
     applicative.then ? new applicative.constructor(function (resolve, reject) { // Promise
       return isValue(value) ?
-        resolve(assertValue(value)) :
+        resolve(getValue(value)) :
         reject(isError(value) && assertError(value));
     }) :
     (function() { throw new Error('Not applicative: ' + applicative); }())
@@ -96,33 +94,40 @@ function chain(monad, fn) {
 
 // Value checking
 
-function isMaybe(maybeMaybe) {
-  return maybeMaybe.or && maybeMaybe.isValue && maybeMaybe.get && maybeMaybe.map;
-}
-
-function isMaybeError(maybeMaybe) {
-  return maybeMaybe && maybeMaybe.isError && maybeMaybe.getError &&
-    maybeMaybe.map;
-}
-
-function valueOr(fallbackValue, maybeValue) {
-  return isRawNone(maybeValue) ? fallbackValue :
-    isMaybe(maybeValue) ? maybeValue.or(fallbackValue) : maybeValue;
-}
-
 function isRawNone(maybeValue) {
   return maybeValue == null || maybeValue !== maybeValue;
 }
 
 function isValue(maybeValue) {
-  return !(isRawNone(maybeValue) || isMaybe(maybeValue) && !maybeValue.isValue());
+  return !(
+    isRawNone(maybeValue) ||
+    typeof maybeValue.isValue === 'function' && !maybeValue.isValue()
+  );
 }
 
-function assertValue(maybeValue) {
-  if (isRawNone(maybeValue)) {
-    throw new Error('Forced none value: ' + maybeValue);
+function getValue(maybeValue) {
+  if (!isValue(maybeValue)) {
+    throw new Error('Must be non-none value: ' + maybeValue);
   }
-  return isMaybe(maybeValue) ? maybeValue.get() : maybeValue;
+  return typeof maybeValue.getValue === 'function' ?
+    maybeValue.getValue() :
+    maybeValue;
+}
+
+function valueOr(maybeValue, fallbackValue) {
+  return isRawNone(maybeValue) ? fallbackValue :
+    typeof maybeValue.valueOr === 'function' ?
+      maybeValue.valueOr(fallbackValue) :
+      maybeValue;
+}
+
+
+//////
+
+
+function isMaybeError(maybeMaybe) {
+  return maybeMaybe && maybeMaybe.isError && maybeMaybe.getError &&
+    maybeMaybe.map;
 }
 
 function isError(maybeError) {
@@ -147,12 +152,14 @@ function assertError(maybeError) {
 global.equals = equals;
 global.map = map;
 global.apply = apply;
-global.unit = unit;
+global.of = of;
 global.chain = chain;
 
-global.valueOr = valueOr;
 global.isValue = isValue;
-global.assertValue = assertValue;
+global.getValue = getValue;
+global.valueOr = valueOr;
+
+global.isMaybeError = isMaybeError;
 global.isError = isError;
 global.assertError = assertError;
 

@@ -42,13 +42,13 @@ C -> B    (T -> Either<T>) map aka map, alternative form
 C -> C    (T -> T) map aka map
 
 
-// unit :: A<any> -> V -> A<V>
-// unit :: Promise<any> -> Maybe<V> -> Promise<V>
-// unit :: Promise<any> -> V -> Promise<V>
+// of :: A<any> -> V -> A<V>
+// of :: Promise<any> -> Maybe<V> -> Promise<V>
+// of :: Promise<any> -> V -> Promise<V>
 if (applicative.then) { // is Promise
   return value instanceof Maybe ?
     value.isValue() ?
-      Promise.accept(value.get()) :
+      Promise.accept(value.getValue()) :
       Promise.reject(value.isError() && value.getError()) :
     Promise.accept(value);
 }
@@ -65,7 +65,7 @@ q = promise(function (resolve) { setTimeout(resolve, 300, null) })
 // r = (+) <$> p <*> q
 // r = apply(map(p, add), q);
 
-qa = chainResult(Maybe.or('default'), q);
+qa = chainResult(Maybe.valueOr('default'), q);
 
 r = apply(map(p, add), qa);
 r.then(function(){console.log('yes', arguments);}, function(e){console.log('no', e, e.stack);})
@@ -122,7 +122,7 @@ filterM(pred, [1,2,3,4,5]).then(function(v) { console.log('yay!', v); }, functio
 // Test w Maybe
 predMaybe = function(a) { return map(Maybe(parseInt(a)), gt(3)) }
 console.log(
-  Maybe.or('shit', filterM(predMaybe, ['1','2','3','4','5']))
+  Maybe.valueOr('shit', filterM(predMaybe, ['1','2','3','4','5']))
 );
 
 mapM(pred, ['A','B','C','D','E']).then(function(v) { console.log('map yay!', v); }, function(e) { console.log('map shit', e, e.stack);})
