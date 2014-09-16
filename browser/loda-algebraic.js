@@ -65,10 +65,8 @@ function of(applicative, value) {
     applicative.of ? applicative.of(value) : // Applicative
     applicative.constructor.of ? applicative.constructor.of(value) : // Applicative Constructor
     isArray(applicative) ? isValue(value) ? [] : [value] : // Array
-    applicative.then ? new applicative.constructor(function (resolve, reject) { // Promise
-      return isValue(value) ?
-        resolve(getValue(value)) :
-        reject(isError(value) && assertError(value));
+    applicative.then ? new applicative.constructor(function (resolve) { // Promise
+      return resolve(value);
     }) :
     (function() { throw new Error('Not applicative: ' + applicative); }())
   );
@@ -122,29 +120,6 @@ function valueOr(maybeValue, fallbackValue) {
 }
 
 
-//////
-
-
-function isMaybeError(maybeMaybe) {
-  return maybeMaybe && maybeMaybe.isError && maybeMaybe.getError &&
-    maybeMaybe.map;
-}
-
-function isError(maybeError) {
-  return isMaybeError(maybeError) ? maybeError.isError() : maybeError instanceof Error;
-}
-
-function assertError(maybeError) {
-  if (isMaybeError(maybeError)) {
-    return maybeError.getError();
-  }
-  if (maybeError instanceof Error) {
-    return maybeError;
-  }
-  throw new Error('Forced error: ' + maybeError);
-}
-
-
 
 // Export
 
@@ -158,9 +133,5 @@ global.chain = chain;
 global.isValue = isValue;
 global.getValue = getValue;
 global.valueOr = valueOr;
-
-global.isMaybeError = isMaybeError;
-global.isError = isError;
-global.assertError = assertError;
 
 }(Function('return this')()))
