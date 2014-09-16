@@ -535,19 +535,17 @@ macro return_do {
 }
 
 
-// Compose
-export (+>)
-export (<+)
 
-// map
+// Map
 export (?>)
 export (<?)
+// ?.
 
-// apply
+// Apply
 export (?>?)
 export (?<?)
 
-// chain
+// Chain
 export (==>)
 export (<==)
 
@@ -556,6 +554,11 @@ export (!)
 export (?:)
 export (?)
 export (if)
+
+
+// Compose
+export (+>)
+export (<+)
 
 // Curry
 export (function@)
