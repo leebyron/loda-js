@@ -30,8 +30,9 @@ function map(functor, fn) {
     isRawNone(functor) ? functor : // Raw none value
     isArray(functor) ? functor.map(mapValues(fn)) :
     functor.map ? functor.map(fn) : // Functor
-    functor.ap && functor.of ? apply(of(functor, fn), functor) : // Apply
-    functor.chain && functor.of || functor.then ? // is Monad
+    functor.ap && (functor.of || functor.constructor.of) ?
+      apply(of(functor, fn), functor) : // Apply
+    functor.chain && (functor.of || functor.constructor.of) || functor.then ? // is Monad
       chain(functor, function (value) { return of(functor, fn(value)); }) :
     fn(functor) // Raw value
   );
