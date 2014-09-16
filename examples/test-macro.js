@@ -8,8 +8,17 @@
 
 // TODO: remove this and assume ES6 environments.
 macro (=>) {
-  rule infix { ($params ...) | { $body ... } } => {
-    function ($params ...) { $body ... }
+  rule infix { ($params:ident (,) ...) | { $body ... } } => {
+    function ($params (,) ...) { $body ... }
+  }
+  rule infix { ($params:ident (,) ...) | $body:expr } => {
+    function ($params (,) ...) { return $body; }
+  }
+  rule infix { $param:ident | { $body ... } } => {
+    function ($param) { $body ... }
+  }
+  rule infix { $param:ident | $body:expr } => {
+    function ($param) { return $body; }
   }
 }
 
@@ -440,3 +449,19 @@ console.log(
   // Or, this is safer, have a fallback value
   qrs5?@(10)() ?: 0
 );
+
+
+// Test promises with unit:
+
+var pa = new Promise(function (resolve) {
+  setTimeout(function () {
+    resolve('foo');
+  }, 500);
+});
+
+var pb = pa ?> () => Maybe.None;
+
+console.log('pb promise?', pb);
+
+pb.then(function (value) { console.log('promise of?', value) })
+  .catch(function (error) { console.log('error of?', error) });

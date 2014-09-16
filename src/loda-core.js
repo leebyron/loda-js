@@ -196,7 +196,7 @@ function map(functor, fn) {
     isRawNone(functor) ? functor : // Raw none value
     isArray(functor) ? functor.map(mapValues(fn)) :
     functor.map ? functor.map(fn) : // Functor
-    functor.ap ? apply(unit(functor, fn), functor) : // Apply
+    functor.ap && functor.of ? apply(unit(functor, fn), functor) : // Apply
     functor.chain && functor.of || functor.then ? // is Monad
       chain(functor, function (value) { return unit(functor, fn(value)); }) :
     fn(functor) // Raw value
@@ -224,21 +224,17 @@ function apply(appFn, appVal) {
 // unit :: Promise a -> b -> Promise b
 // unit :: Promise a -> Maybe b -> Promise b
 function unit(applicative, value) {
-  if (isRawNone(applicative)) {
-    return applicative;
-  }
-  if (applicative.then) {
-    applicative = applicative.constructor;
-  }
   return (
+    isRawNone(applicative) ? applicative : // Raw none value
     applicative.of ? applicative.of(value) : // Applicative
     applicative.constructor.of ? applicative.constructor.of(value) : // Applicative Constructor
     isArray(applicative) ? isValue(value) ? [] : [value] : // Array
-    applicative.resolve && applicative.reject ? // Promise
-      isValue(value) ? applicative.resolve(assertValue(value)) :
-        applicative.reject(isError(value) && assertError(value)) :
-    applicative.constructor ? new applicative.constructor(value) : // Constructor
-    value // Raw value
+    applicative.then ? new applicative.constructor(function (resolve, reject) { // Promise
+      return isValue(value) ?
+        resolve(assertValue(value)) :
+        reject(isError(value) && assertError(value));
+    }) :
+    (function() { throw new Error('Not applicative: ' + applicative); }())
   );
 }
 
