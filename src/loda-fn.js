@@ -184,6 +184,10 @@ function makeCurryFn(arity, fromRight) {
   );
 }
 
+
+
+// Export
+
 global.compose = compose;
 global.composeRight = composeRight;
 global.partial = partial;

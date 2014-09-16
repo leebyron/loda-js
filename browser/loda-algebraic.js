@@ -6,9 +6,9 @@
  *   - Equality (equal)
  *   - Map (aka lift)
  *   - Apply (aka ap)
- *   - Unit (aka return/pure)
+ *   - Of (aka return/pure)
  *   - Chain (aka bind/then)
- *   - Non-none Value checking
+ *   - Non-none Value checking (isValue, getValue, valueOr)
  *
  */
 
