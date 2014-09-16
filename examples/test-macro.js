@@ -141,6 +141,11 @@ console.log(
   a?
 );
 
+// How about assignment
+x?.y?.z = 100;
+console.log('100?', x!.y!.z!);
+
+
 // This is similar to JavaScript's boolean casting `!!`, however it only
 // compares to null values rather than falsey values, making it safe to use
 // with numbers and booleans.

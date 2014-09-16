@@ -240,8 +240,8 @@ macro (?) {
   // a?[b] => map(a, function(v){return v[b];})
   // a?.b(x) => map(a, function(v){return v.b(x);})
   // a?[b](x) => map(a, function(v){return v[b](x);})
-  rule infix { $monad:expr | $access:access $rest:access ... } => {
-    map($monad, function (v) { return v $access $rest ...; })
+  rule infix { $monad:expr | $access:accessChain } => {
+    map($monad, function (v) { return v $access; })
   }
 
 
@@ -287,6 +287,11 @@ macro (?) {
   rule infix { $maybe:expr | } => {
     isValue($maybe)
   }
+}
+
+macro accessChain {
+  rule { $access:access $rest:access ... = $assignment:expr }
+  rule { $access:access $rest:access ... }
 }
 
 macro access {
