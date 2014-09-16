@@ -972,7 +972,7 @@ describe 'loda', ->
         some = Maybe 'abc'
         none = Maybe null
         expect(some instanceof Maybe.Value).toBe true
-        expect(none instanceof Maybe.None).toBe true
+        expect(none == Maybe.None).toBe true
         expect(some instanceof Maybe).toBe true
         expect(none instanceof Maybe).toBe true
 
@@ -980,14 +980,14 @@ describe 'loda', ->
         some = Maybe.Value 'abc'
         none = Maybe.None
         expect(some instanceof Maybe.Value).toBe true
-        expect(none instanceof Maybe.None).toBe true
+        expect(none == Maybe.None).toBe true
         expect(some instanceof Maybe).toBe true
         expect(none instanceof Maybe).toBe true
 
       it 'can toString', ->
         some = Maybe.Value 'abc'
         none = Maybe.None
-        expect('' + some).toBe 'Maybe.Value abc'
+        expect('' + some).toBe 'Maybe.Value( abc )'
         expect('' + none).toBe 'Maybe.None'
 
       describe 'is', ->

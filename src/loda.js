@@ -1083,7 +1083,7 @@ function promise(fn) {
  * Maybe
  */
 function Maybe(value) {
-  return value == null || value !== value ? MaybeNone :
+  return value == null || value !== value ? None :
     value instanceof Maybe ? value :
     value instanceof Error ? new MaybeError(value) :
     new MaybeValue(value);
@@ -1144,6 +1144,7 @@ Maybe.prototype.getError = function() {
 Maybe.prototype.join =
 Maybe.prototype.map =
 Maybe.prototype.ap =
+Maybe.prototype.flatMap =
 Maybe.prototype.chain = function(fn) {
   return this;
 }
@@ -1157,10 +1158,7 @@ function MaybeValue(value) {
 }
 MaybeValue.prototype = Object.create(Maybe.prototype);
 MaybeValue.prototype.toString = function() {
-  return 'Maybe.Value ' + this._value;
-}
-MaybeValue.prototype.isValue = function() {
-  return true;
+  return 'Maybe.Value( ' + this._value + ' )';
 }
 MaybeValue.prototype.or = function(fallback) {
   return this._value;
@@ -1169,44 +1167,36 @@ MaybeValue.prototype.get = function() {
   return this._value;
 }
 MaybeValue.prototype.equals = function(maybe) {
+  maybe = Maybe(maybe);
   return maybe.isValue() && is(this._value, maybe._value);
 }
 MaybeValue.prototype.join = function() {
   return this._value instanceof Maybe ? this._value : this;
 }
 MaybeValue.prototype.map = function(fn) {
-  return this.of(fn(this._value));
+  return Maybe(fn(this._value));
 }
 MaybeValue.prototype.ap = function(maybe) {
   return maybe.map(this._value);
 }
+MaybeValue.prototype.flatMap =
 MaybeValue.prototype.chain = function(fn) {
   return fn(this._value);
 }
 Maybe.Value = MaybeValue;
 
-function MaybeNone() {
-  return MaybeNone;
-}
+function MaybeNone() {}
 MaybeNone.prototype = Object.create(Maybe.prototype);
 MaybeNone.prototype.toString = function() {
   return 'Maybe.None';
 }
-MaybeNone.prototype.isNone = function() {
-  return true;
-}
 MaybeNone.prototype.equals = function(maybe) {
-  return maybe === MaybeNone;
+  return maybe === None;
 }
 MaybeNone.prototype.ap = function(maybe) {
-  return maybe.isError() ? maybe : MaybeNone;
+  return maybe.isError() ? maybe : None;
 }
-var setPrototypeOf = Object.setPrototypeOf || function (obj, proto) {
-  obj.__proto__ = proto; // jshint ignore: line
-  return obj;
-}
-setPrototypeOf(MaybeNone, MaybeNone.prototype);
-Maybe.None = MaybeNone;
+var None = Maybe.None = new MaybeNone();
 
 function MaybeError(error) {
   if (this instanceof MaybeError) {
@@ -1217,19 +1207,22 @@ function MaybeError(error) {
 }
 MaybeError.prototype = Object.create(Maybe.prototype);
 MaybeError.prototype.toString = function() {
-  return 'Maybe.Error ' + this._error;
-}
-MaybeError.prototype.isError = function() {
-  return true;
+  return 'Maybe.Error( ' + this._error + ' )';
 }
 MaybeError.prototype.getError = function() {
   return this._error;
 }
 MaybeError.prototype.equals = function(maybe) {
+  maybe = Maybe(maybe);
   return maybe.isError() && is(this._error, maybe._error);
 }
 Maybe.Error = MaybeError;
 
+MaybeValue.prototype.isValue =
+MaybeNone.prototype.isNone =
+MaybeError.prototype.isError = function() {
+  return true;
+}
 
 
 
