@@ -2,6 +2,7 @@ var benchmark = require('benchmark');
 var child = require('child_process');
 var pad = require('pad');
 var Promise = require('promise');
+require('../src/loda-fn.js');
 require('../src/loda-core.js');
 var _ = require('../');
 

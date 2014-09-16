@@ -131,14 +131,14 @@ function assertError(maybeError) {
 // Export
 
 
-global.is = curry(is);
+global.is = is;
 
-global.map = curryRight(map);
-global.apply = curry(apply);
-global.unit = curry(unit);
-global.chain = curryRight(chain);
+global.map = map;
+global.apply = apply;
+global.unit = unit;
+global.chain = chain;
 
-global.valueOr = curry(valueOr);
+global.valueOr = valueOr;
 global.isValue = isValue;
 global.assertValue = assertValue;
 global.isError = isError;

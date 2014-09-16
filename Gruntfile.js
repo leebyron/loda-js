@@ -31,13 +31,13 @@ module.exports = function(grunt) {
     },
     build: {
       all: [{
-        libName: 'loda',
-        src: 'src/loda.js',
-        wrapper: './resources/universal-module.js',
+        libName: 'loda-fn',
+        src: 'src/loda-fn.js',
+        wrapper: './resources/global-module.js',
         dest: 'browser/',
-        raw: 'loda.js',
-        min: 'loda.min.js',
-        map: 'loda.min.map',
+        raw: 'loda-fn.js',
+        min: 'loda-fn.min.js',
+        map: 'loda-fn.min.map',
       },
       {
         libName: 'loda-core',
@@ -47,6 +47,15 @@ module.exports = function(grunt) {
         raw: 'loda-core.js',
         min: 'loda-core.min.js',
         map: 'loda-core.min.map',
+      },
+      {
+        libName: 'loda',
+        src: 'src/loda.js',
+        wrapper: './resources/universal-module.js',
+        dest: 'browser/',
+        raw: 'loda.js',
+        min: 'loda.min.js',
+        map: 'loda.min.map',
       }],
       options: {
         mangle: {
@@ -68,6 +77,10 @@ module.exports = function(grunt) {
     },
     size: {
       all: [{
+        raw: 'browser/loda-fn.js',
+        min: 'browser/loda-fn.min.js'
+      },
+      {
         raw: 'browser/loda-core.js',
         min: 'browser/loda-core.min.js'
       },

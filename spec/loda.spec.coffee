@@ -3,6 +3,7 @@ require('jasmine-check').install()
 describe 'loda', ->
 
   # clean this up later
+  require('../src/loda-fn.js')
   require('../src/loda-core.js')
   loda = require('../')
   loda.install global
@@ -1106,10 +1107,9 @@ describe 'loda', ->
           expect(Maybe.get m2).toBe 4
 
         it 'safely carries Maybe.None through calls', ->
-          inc = map add 1
           spy = jasmine.createSpy()
           m1 = Maybe.None
-          m2 = inc m1
+          m2 = map m1, add(1)
           m3 = map m2, spy
           expect(spy).not.toHaveBeenCalled()
           expect(Maybe.isValue m3).toBe false
@@ -1233,21 +1233,21 @@ describe 'loda', ->
           doubleOrDie = (x) -> Maybe( x * 2 if x < 8 )
           pipeMaybe1 = pipe Maybe 1
           expect(Maybe.or 'die',
-            pipeMaybe1 chain(doubleOrDie)
+            pipeMaybe1 partialRight(chain, doubleOrDie)
           ).toBe 2
           expect(Maybe.or 'die',
             pipeMaybe1(
-              chain(doubleOrDie),
-              chain(doubleOrDie),
-              chain(doubleOrDie)
+              partialRight(chain, doubleOrDie),
+              partialRight(chain, doubleOrDie),
+              partialRight(chain, doubleOrDie)
             )
           ).toBe 8
           expect(Maybe.or 'die',
             pipeMaybe1(
-              chain(doubleOrDie),
-              chain(doubleOrDie),
-              chain(doubleOrDie),
-              chain(doubleOrDie)
+              partialRight(chain, doubleOrDie),
+              partialRight(chain, doubleOrDie),
+              partialRight(chain, doubleOrDie),
+              partialRight(chain, doubleOrDie)
             )
           ).toBe 'die'
 
@@ -1274,7 +1274,7 @@ describe 'loda', ->
         it 'has right identity', ->
           m = Maybe 3
           expect(eq(
-            chain(m, unit(m)),
+            chain(m, partial(unit, m)),
             m
           )).toBe true
 
