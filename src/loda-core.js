@@ -198,10 +198,6 @@ function is(v1, v2) {
 function lift(functor, fn) {
   return (
     isRawNone(functor) ? functor : // Raw none value
-    isCurried(fn) && fn.length > 1 && functor.chain ? // Create an Apply // TODO: should functor.then and isArray be included here?
-      chain(functor, function (value) {
-        return unit(functor, curry(partial(uncurry(fn), value), fn.length - 1));
-      }) :
     isArray(functor) ? functor.map(mapValues(fn)) :
     functor.map ? functor.map(fn) : // Functor
     functor.ap ? apply(unit(functor, fn), functor) : // Apply
@@ -332,6 +328,7 @@ global.uncurry = uncurry;
 global.isCurried = isCurried;
 
 global.is = curry(is);
+
 global.lift = curryRight(lift);
 global.apply = curry(apply);
 global.unit = curry(unit);
