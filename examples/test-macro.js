@@ -2,7 +2,7 @@
  * Real janky test of sweet macros.
  * From loda-js/ Run me with:
  *
- *    ./node_modules/sweet.js/bin/sjs --readable-names --module ./macros/loda.macros.js ./examples/test-macro.js | node
+ *    ./node_modules/sweet.js/bin/sjs --readable-names --module ./macros/loda-fn.macros.js --module ./macros/loda.macros.js ./examples/test-macro.js | node
  *
  */
 
@@ -23,6 +23,7 @@ macro (=>) {
 }
 
 
+require('./src/loda-fn.js');
 require('./src/loda-core.js');
 require('./').install(global);
 var Promise = require('promise');
