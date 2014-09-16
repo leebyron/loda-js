@@ -1,3 +1,14 @@
+/**
+ * Javascript's missing Algebraic value functions.
+ *
+ *   - Equality (equal)
+ *   - Map (aka lift)
+ *   - Apply (aka ap)
+ *   - Unit (aka return/pure)
+ *   - Chain (aka bind/then)
+ *   - Non-none Value checking
+ *
+ */
 
 
 
@@ -5,8 +16,8 @@
  * Functors / Monads / Monoids
  */
 
-// is :: a -> b -> boolean
-function is(v1, v2) {
+// equals :: a -> b -> boolean
+function equals(v1, v2) {
   return (
     v1 === 0 && v2 === 0 && 1 / v1 === 1 / v2 ||
     v1 === v2 ||
@@ -131,8 +142,7 @@ function assertError(maybeError) {
 // Export
 
 
-global.is = is;
-
+global.equals = equals;
 global.map = map;
 global.apply = apply;
 global.unit = unit;

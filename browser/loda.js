@@ -6,11 +6,12 @@ function universalModule(module, undefined) { module = module || {}
  * Use JavaScript functionally, you must!
  */
 
-//import "loda-core"
+//import "loda-fn"
+//import "loda-algebraic"
 
 /* global arity, compose, composeRight, partial, partialRight,
           curry, curryRight, uncurry, isCurried,
-          map, apply, unit, chain, is */
+          map, apply, unit, chain, equals */
 
 
 
@@ -887,7 +888,7 @@ function neg(x) {
  * -----------
  */
 
-var eq = curry(argComparer(is), 2);
+var eq = curry(argComparer(equals), 2);
 
 var lt = curryRight(argComparer(function (x, y) {
   return x < y;
@@ -1166,7 +1167,7 @@ MaybeValue.prototype.get = function() {
 }
 MaybeValue.prototype.equals = function(maybe) {
   maybe = Maybe(maybe);
-  return maybe.isValue() && is(this._value, maybe._value);
+  return maybe.isValue() && equals(this._value, maybe._value);
 }
 MaybeValue.prototype.join = function() {
   return this._value instanceof Maybe ? this._value : this;
@@ -1212,7 +1213,7 @@ MaybeError.prototype.getError = function() {
 }
 MaybeError.prototype.equals = function(maybe) {
   maybe = Maybe(maybe);
-  return maybe.isError() && is(this._error, maybe._error);
+  return maybe.isError() && equals(this._error, maybe._error);
 }
 Maybe.Error = MaybeError;
 

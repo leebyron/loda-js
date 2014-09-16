@@ -40,13 +40,13 @@ module.exports = function(grunt) {
         map: 'loda-fn.min.map',
       },
       {
-        libName: 'loda-core',
-        src: 'src/loda-core.js',
+        libName: 'loda-algebraic',
+        src: 'src/loda-algebraic.js',
         wrapper: './resources/global-module.js',
         dest: 'browser/',
-        raw: 'loda-core.js',
-        min: 'loda-core.min.js',
-        map: 'loda-core.min.map',
+        raw: 'loda-algebraic.js',
+        min: 'loda-algebraic.min.js',
+        map: 'loda-algebraic.min.map',
       },
       {
         libName: 'loda',
@@ -81,8 +81,8 @@ module.exports = function(grunt) {
         min: 'browser/loda-fn.min.js'
       },
       {
-        raw: 'browser/loda-core.js',
-        min: 'browser/loda-core.min.js'
+        raw: 'browser/loda-algebraic.js',
+        min: 'browser/loda-algebraic.min.js'
       },
       {
         raw: 'browser/loda.js',

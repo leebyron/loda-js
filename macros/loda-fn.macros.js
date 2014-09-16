@@ -22,7 +22,7 @@ operator (<+) 8 right { $l, $r } => #{ compose($l, $r) }
  * Curried function
  * ================
  *
- * Define a function which is curried. See `loda-core.curry`.
+ * Define a function which is curried. See `loda-fn.curry`.
  *
  *     function@ curriedAdd(v1, v2) {
  *       return v1 + v2;
@@ -63,7 +63,7 @@ macro (function@) {
  * =========================
  *
  * Partially apply arguments to a function in a form that looks like a function
- * call. See `loda-core.partial`.
+ * call. See `loda-fn.partial`.
  *
  * `@add(1)(2)` is shorthand for `add(1, 2)`
  *

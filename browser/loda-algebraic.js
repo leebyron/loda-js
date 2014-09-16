@@ -4,9 +4,11 @@
  * Javascript's missing Algebraic value functions.
  *
  *   - Equality (equal)
- *   - Partial application
- *   - Setting arity (function.length)
- *   - Currying functions
+ *   - Map (aka lift)
+ *   - Apply (aka ap)
+ *   - Unit (aka return/pure)
+ *   - Chain (aka bind/then)
+ *   - Non-none Value checking
  *
  */
 
@@ -143,7 +145,6 @@ function assertError(maybeError) {
 
 
 global.equals = equals;
-
 global.map = map;
 global.apply = apply;
 global.unit = unit;

@@ -3,7 +3,7 @@ var child = require('child_process');
 var pad = require('pad');
 var Promise = require('promise');
 require('../src/loda-fn.js');
-require('../src/loda-core.js');
+require('../src/loda-algebraic.js');
 var _ = require('../');
 
 var exec = Promise.denodeify(child.exec);

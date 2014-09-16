@@ -4,7 +4,7 @@ describe 'loda', ->
 
   # clean this up later
   require('../src/loda-fn.js')
-  require('../src/loda-core.js')
+  require('../src/loda-algebraic.js')
   loda = require('../')
   loda.install global
 
