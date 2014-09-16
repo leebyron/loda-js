@@ -180,6 +180,7 @@ function makeCurryFn(arity, fromRight) {
  * Functors / Monads / Monoids
  */
 
+// is :: a -> b -> boolean
 function is(v1, v2) {
   return (
     v1 === 0 && v2 === 0 && 1 / v1 === 1 / v2 ||
@@ -188,11 +189,6 @@ function is(v1, v2) {
     !!v1 && typeof v1.equals === 'function' && v1.equals(v2)
   );
 }
-
-// TODO: if value is just an iterator, use the list comprehension form.
-// TODO: even if fn isn't curried, but it's length is > 1, it might still be
-//       the right thing to return an Apply
-// TODO: accept multiple args are do the apply chaining for us
 
 // map :: M a -> (a -> b) -> M b
 function map(functor, fn) {
@@ -216,9 +212,7 @@ function mapValues(mapper) {
 }
 
 
-
-// TODO: handle curried case
-// AKA <*>
+// apply :: M (a -> b) -> M a -> M b
 function apply(appFn, appVal) {
   return (
     appFn && appFn.ap ? appFn.ap(appVal) : // Apply
@@ -226,9 +220,9 @@ function apply(appFn, appVal) {
   );
 }
 
-// unit :: A<any> -> V -> A<V>
-// unit :: Promise<any> -> Maybe<V> -> Promise<V>
-// unit :: Promise<any> -> V -> Promise<V>
+// unit :: M a -> b -> M b
+// unit :: Promise a -> b -> Promise b
+// unit :: Promise a -> Maybe b -> Promise b
 function unit(applicative, value) {
   if (isRawNone(applicative)) {
     return applicative;
@@ -246,10 +240,12 @@ function unit(applicative, value) {
     applicative.constructor ? new applicative.constructor(value) : // Constructor
     value // Raw value
   );
-  // TODO: iterable
 }
 
-// TODO: accept multiple args and do the apply chaining for us
+// chain :: M a -> (a -> M b) -> M b
+// chain :: Promise a -> (a -> Promise b) -> Promise b
+// chain :: Maybe a -> (a -> Maybe b) -> Maybe b
+// chain :: Array a -> (a -> Array b) -> Array b
 function chain(monad, fn) {
   return (
     isRawNone(monad) ? monad : // Raw none value
@@ -260,10 +256,6 @@ function chain(monad, fn) {
     isArray(monad) ? Array.prototype.concat.apply([], monad.map(mapValues(fn))) : // Array
     fn(monad) // Raw value
   );
-  // TODO: figure out how to model iterables
-  // if (isIterable(monad)) { // is Iterable
-  //   return concat(map(fn, monad));
-  // }
 }
 
 
