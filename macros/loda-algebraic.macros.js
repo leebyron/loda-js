@@ -291,6 +291,19 @@ macro (?) {
 
 macro accessChain {
   rule { $access:access $rest:access ... = $assignment:expr }
+  rule { $access:access $rest:access ... += $assignment:expr }
+  rule { $access:access $rest:access ... -= $assignment:expr }
+  rule { $access:access $rest:access ... *= $assignment:expr }
+  // rule { $access:access $rest:access ... /= $assignment:expr } // bug in sweet.js
+  rule { $access:access $rest:access ... %= $assignment:expr }
+  rule { $access:access $rest:access ... <<= $assignment:expr }
+  rule { $access:access $rest:access ... >>= $assignment:expr }
+  rule { $access:access $rest:access ... >>>= $assignment:expr }
+  rule { $access:access $rest:access ... &= $assignment:expr }
+  rule { $access:access $rest:access ... ^= $assignment:expr }
+  rule { $access:access $rest:access ... |= $assignment:expr }
+  rule { $access:access $rest:access ... ++ }
+  rule { $access:access $rest:access ... -- }
   rule { $access:access $rest:access ... }
 }
 

@@ -145,6 +145,10 @@ console.log(
 x?.y?.z = 100;
 console.log('100?', x!.y!.z!);
 
+// Or alternative assignment
+x?.y?.z++;
+console.log('101?', x!.y!.z!);
+
 
 // This is similar to JavaScript's boolean casting `!!`, however it only
 // compares to null values rather than falsey values, making it safe to use
