@@ -401,6 +401,14 @@ if (var sx = x) {
   console.log('shit');
 }
 
+// How about while:
+
+var q = {x:2};
+while (var qx = q?.x) {
+  console.log('qx is...', qx);
+  q!.x = q!.x > 0 ? q!.x - 1 : null;
+}
+
 // Combine some operators
 
 var q = Maybe({

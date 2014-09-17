@@ -335,14 +335,40 @@ macro access {
 let if = macro {
   // if (var x = maybe) {...} => if (maybe?) {var x = maybe! ...}
   rule { ( $assign:assignment $maybe:expr ) { $body ... } } => {
-    var maybe = $maybe;
-    if (maybe?) {
+    var maybe;
+    if ((maybe = $maybe), maybe?) {
       $assign maybe!;
       $body ...
     }
   }
   // Default, don't mess with regular if statements
   rule {} => { if }
+}
+
+let while = macro {
+  // while (var x = maybe) {...} => while (maybe?) {var x = maybe! ...}
+  rule { ( $assign:assignment $maybe:expr ) { $body ... } } => {
+    var maybe;
+    while ((maybe = $maybe), maybe?) {
+      $assign maybe!;
+      $body ...
+    }
+  }
+  // Default, don't mess with regular while statements
+  rule {} => { while }
+}
+
+let for = macro {
+  // while (var x = maybe) {...} => while (maybe?) {var x = maybe! ...}
+  rule { ( $init:expr ; $assign:assignment ; $fin:expr ) { $body ... } } => {
+    var maybe;
+    for ($init; (maybe = $maybe), maybe?; $fin) {
+      $assign maybe!;
+      $body ...
+    }
+  }
+  // Default, don't mess with regular for statements
+  rule {} => { for }
 }
 
 macro assignment {
@@ -397,3 +423,5 @@ export (!)
 export (?:)
 export (?)
 export (if)
+export (while)
+export (for)
